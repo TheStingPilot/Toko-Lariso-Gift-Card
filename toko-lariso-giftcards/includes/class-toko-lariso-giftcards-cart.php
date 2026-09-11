@@ -13,6 +13,8 @@ defined( 'ABSPATH' ) || exit;
 class Toko_Lariso_Giftcards_Cart {
 	public const SESSION_APPLIED     = 'tokolariso_giftcards_applied';
 	public const SESSION_ALLOCATIONS = 'tokolariso_giftcards_allocations';
+	private const SESSION_PENDING_CODE = 'tokolariso_giftcard_pending_code';
+	private const COOKIE_PENDING_CODE = 'tokolariso_giftcard_pending';
 
 	/**
 	 * Settings.
@@ -53,16 +55,24 @@ class Toko_Lariso_Giftcards_Cart {
 		add_action( 'woocommerce_check_cart_items', array( $this, 'validate_cart_item_mix' ) );
 		add_action( 'woocommerce_checkout_process', array( $this, 'validate_cart_item_mix' ) );
 		add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'add_order_item_meta' ), 10, 4 );
+		add_action( 'wp_loaded', array( $this, 'remember_giftcard_from_url' ), 20 );
 		add_action( 'template_redirect', array( $this, 'maybe_apply_giftcard_from_url' ) );
+		add_action( 'woocommerce_add_to_cart', array( $this, 'maybe_apply_pending_giftcard_cookie' ), 20 );
+		add_action( 'woocommerce_cart_loaded_from_session', array( $this, 'maybe_apply_pending_giftcard_cookie' ), 20 );
 	}
 
 	/**
-	 * Applies a giftcard code from a PDF/QR URL and removes it from the address bar.
+	 * Remembers a giftcard code from a PDF/QR URL as early as possible.
 	 *
 	 * @return void
 	 */
-	public function maybe_apply_giftcard_from_url(): void {
-		if ( is_admin() || empty( $_GET['tokolariso_giftcard'] ) || ! function_exists( 'WC' ) || ! WC()->session ) {
+	public function remember_giftcard_from_url(): void {
+		if ( is_admin() || empty( $_GET['tokolariso_giftcard'] ) ) {
+			return;
+		}
+
+		if ( ! $this->ensure_wc_cart() ) {
+			Toko_Lariso_Giftcards_Debug::log( 'pending_url_code_no_wc_cart' );
 			return;
 		}
 
@@ -72,14 +82,202 @@ class Toko_Lariso_Giftcards_Cart {
 		}
 
 		try {
-			$this->apply_code_to_session( $code );
-			wc_add_notice( __( 'Giftcard applied.', 'toko-lariso-giftcards' ), 'success' );
+			$this->validate_remembered_code( $code );
+			$this->set_pending_giftcard_code( $code );
+			Toko_Lariso_Giftcards_Debug::log( 'pending_url_code_saved', array( 'has_cart_items' => $this->cart_has_items() ? 'yes' : 'no' ) );
+
+			wc_add_notice( __( 'Giftcard code saved. Add products to your cart and the giftcard will be applied automatically.', 'toko-lariso-giftcards' ), 'success' );
 		} catch ( Throwable $exception ) {
+			$this->clear_pending_giftcard_code();
+			Toko_Lariso_Giftcards_Debug::log( 'pending_url_code_failed', array( 'error' => $exception->getMessage() ), 'warning' );
 			wc_add_notice( $exception->getMessage(), 'error' );
 		}
 
 		wp_safe_redirect( remove_query_arg( 'tokolariso_giftcard' ) );
 		exit;
+	}
+
+	/**
+	 * Applies a pending giftcard when cart/checkout is viewed.
+	 *
+	 * @return void
+	 */
+	public function maybe_apply_giftcard_from_url(): void {
+		if ( is_admin() || ! $this->ensure_wc_cart() ) {
+			return;
+		}
+
+		if ( ( is_cart() || is_checkout() ) && $this->cart_has_items() ) {
+			$this->maybe_apply_pending_giftcard_cookie();
+		}
+	}
+
+	/**
+	 * Applies a remembered giftcard code once a cart is available.
+	 *
+	 * @return void
+	 */
+	public function maybe_apply_pending_giftcard_cookie(): void {
+		if ( is_admin() || ! $this->ensure_wc_cart() || ! $this->cart_has_items() ) {
+			return;
+		}
+
+		$code = $this->pending_giftcard_code();
+		if ( '' === $code ) {
+			return;
+		}
+
+		try {
+			$this->apply_code_to_session( $code );
+			wc_add_notice( __( 'Giftcard applied.', 'toko-lariso-giftcards' ), 'success' );
+			Toko_Lariso_Giftcards_Debug::log( 'pending_code_applied' );
+			$this->clear_pending_giftcard_code();
+		} catch ( Throwable $exception ) {
+			wc_add_notice( $exception->getMessage(), 'error' );
+			Toko_Lariso_Giftcards_Debug::log( 'pending_code_apply_failed', array( 'error' => $exception->getMessage() ), 'warning' );
+			if ( $this->pending_code_error_should_clear( $exception ) ) {
+				$this->clear_pending_giftcard_code();
+			}
+		}
+	}
+
+	/**
+	 * Makes sure WooCommerce cart/session objects are available.
+	 *
+	 * @return bool
+	 */
+	private function ensure_wc_cart(): bool {
+		if ( ! function_exists( 'WC' ) ) {
+			return false;
+		}
+
+		if ( ( ! WC()->session || ! WC()->cart ) && function_exists( 'wc_load_cart' ) ) {
+			wc_load_cart();
+		}
+
+		return (bool) ( WC()->session && WC()->cart );
+	}
+
+	/**
+	 * Checks whether the current cart has lines.
+	 *
+	 * @return bool
+	 */
+	private function cart_has_items(): bool {
+		return WC()->cart && ! WC()->cart->is_empty();
+	}
+
+	/**
+	 * Validates a remembered code without applying it to the cart yet.
+	 *
+	 * @param string $code Giftcard code.
+	 * @return void
+	 */
+	private function validate_remembered_code( string $code ): void {
+		$card = $this->repository->get_by_code( $code );
+		if ( ! $card ) {
+			throw new InvalidArgumentException( __( 'Giftcard code was not found or cannot be used.', 'toko-lariso-giftcards' ) );
+		}
+
+		if ( $this->repository->is_expired_by_date( $card ) ) {
+			$this->repository->expire( (int) $card['id'] );
+			throw new InvalidArgumentException( __( 'Giftcard code was not found or cannot be used.', 'toko-lariso-giftcards' ) );
+		}
+
+		if ( 'active' !== $card['status'] || (float) $card['current_balance'] <= 0 ) {
+			throw new InvalidArgumentException( __( 'Giftcard code was not found or cannot be used.', 'toko-lariso-giftcards' ) );
+		}
+	}
+
+	/**
+	 * Stores a pending giftcard code in a short-lived browser cookie.
+	 *
+	 * @param string $code Giftcard code.
+	 * @return void
+	 */
+	private function set_pending_giftcard_code( string $code ): void {
+		if ( WC()->session ) {
+			if ( is_callable( array( WC()->session, 'set_customer_session_cookie' ) ) ) {
+				WC()->session->set_customer_session_cookie( true );
+			}
+			WC()->session->set( self::SESSION_PENDING_CODE, $code );
+		}
+		$this->set_giftcard_cookie( rawurlencode( $code ), time() + ( 14 * DAY_IN_SECONDS ) );
+	}
+
+	/**
+	 * Reads a pending giftcard code from session or browser cookie.
+	 *
+	 * @return string
+	 */
+	private function pending_giftcard_code(): string {
+		if ( WC()->session ) {
+			$session_code = WC()->session->get( self::SESSION_PENDING_CODE, '' );
+			if ( is_string( $session_code ) && '' !== $session_code ) {
+				return sanitize_text_field( $session_code );
+			}
+		}
+
+		if ( empty( $_COOKIE[ self::COOKIE_PENDING_CODE ] ) ) {
+			return '';
+		}
+
+		return sanitize_text_field( rawurldecode( wp_unslash( $_COOKIE[ self::COOKIE_PENDING_CODE ] ) ) );
+	}
+
+	/**
+	 * Clears the pending giftcard cookie.
+	 *
+	 * @return void
+	 */
+	private function clear_pending_giftcard_code(): void {
+		if ( WC()->session ) {
+			WC()->session->__unset( self::SESSION_PENDING_CODE );
+		}
+		$this->set_giftcard_cookie( '', time() - HOUR_IN_SECONDS );
+		unset( $_COOKIE[ self::COOKIE_PENDING_CODE ] );
+	}
+
+	/**
+	 * Writes the pending giftcard cookie.
+	 *
+	 * @param string $value Cookie value.
+	 * @param int    $expires Expiry timestamp.
+	 * @return void
+	 */
+	private function set_giftcard_cookie( string $value, int $expires ): void {
+		$options = array(
+			'expires'  => $expires,
+			'path'     => defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/',
+			'secure'   => is_ssl(),
+			'httponly' => true,
+			'samesite' => 'Lax',
+		);
+		if ( defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ) {
+			$options['domain'] = COOKIE_DOMAIN;
+		}
+
+		if ( function_exists( 'wc_setcookie' ) ) {
+			wc_setcookie( self::COOKIE_PENDING_CODE, $value, $expires, is_ssl(), true );
+		}
+		setcookie( self::COOKIE_PENDING_CODE, $value, $options );
+		if ( defined( 'SITECOOKIEPATH' ) && SITECOOKIEPATH && SITECOOKIEPATH !== $options['path'] ) {
+			$options['path'] = SITECOOKIEPATH;
+			setcookie( self::COOKIE_PENDING_CODE, $value, $options );
+		}
+		if ( $expires > time() ) {
+			$_COOKIE[ self::COOKIE_PENDING_CODE ] = $value;
+		}
+	}
+
+	/**
+	 * Determines whether a pending-code apply failure should clear storage.
+	 *
+	 * @param Throwable $exception Exception.
+	 * @return bool
+	 */
+	private function pending_code_error_should_clear( Throwable $exception ): bool {
+		return $exception instanceof InvalidArgumentException;
 	}
 
 	/**

@@ -242,6 +242,19 @@ Expected:
 - Opening the QR URL applies the giftcard to the WooCommerce session.
 - The browser is redirected to the same page without the full code in the address bar.
 
+Repeat with an empty cart:
+
+1. Empty the cart.
+2. Open the QR URL.
+3. Confirm the browser redirects without the full code in the address bar.
+4. Add a regular product to the cart.
+
+Expected:
+
+- The QR visit stores the code temporarily.
+- After a regular product is added, the giftcard is applied automatically.
+- The pending cookie is cleared after the apply attempt.
+
 ## 8a. Repeated Apply Clicks During Checkout Updates
 
 1. Open Checkout Block with a valid cart.

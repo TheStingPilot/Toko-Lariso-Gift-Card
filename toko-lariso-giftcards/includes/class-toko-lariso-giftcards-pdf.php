@@ -235,15 +235,16 @@ class Toko_Lariso_Giftcards_PDF {
 		$amount    = $this->format_pdf_price( (float) $card['initial_amount'], (string) $card['currency'] );
 		$redeem_url = $this->redemption_url( $code );
 		$qr_matrix  = $this->qr_matrix_for_text( $redeem_url );
+		$header_rgb = $this->pdf_rgb_from_hex( (string) $this->settings->get( 'pdf_header_color', '#7d49b4' ), array( 0.49, 0.29, 0.71 ) );
 
 		$content = '';
 		$content .= $this->pdf_fill_rgb( 0.98, 0.97, 0.95 );
 		$content .= $this->pdf_rect( 0, 0, $page_w, $page_h, 'f', $page_h );
-		$content .= $this->pdf_fill_rgb( 0.49, 0.29, 0.71 );
+		$content .= $this->pdf_fill_rgb( $header_rgb[0], $header_rgb[1], $header_rgb[2] );
 		$content .= $this->pdf_rect( 0, 0, $page_w, 54, 'f', $page_h );
 		if ( $logo_id && $logo ) {
-			$content .= $this->pdf_image_fit( 'Logo', 36, 10, 86, 34, $logo, $page_h );
-			$content .= $this->pdf_text( 140, 35, 22, 'Toko Lariso Cadeaubon', $page_h, 1, 1, 1 );
+			$content .= $this->pdf_image_fit( 'Logo', 34, 8, 112, 38, $logo, $page_h );
+			$content .= $this->pdf_text( 166, 35, 22, 'Toko Lariso Cadeaubon', $page_h, 1, 1, 1 );
 		} else {
 			$content .= $this->pdf_text( 36, 35, 22, 'Toko Lariso Cadeaubon', $page_h, 1, 1, 1 );
 		}
@@ -272,11 +273,11 @@ class Toko_Lariso_Giftcards_PDF {
 		$content .= $this->pdf_text( $x, 240, 24, $code, $page_h, 0.05, 0.09, 0.18 );
 		$content .= $this->pdf_text( $x, 284, 13, __( 'Valid until', 'toko-lariso-giftcards' ) . ':', $page_h, 0.49, 0.29, 0.71 );
 		$content .= $this->pdf_text( $x, 306, 15, $expires, $page_h, 0.05, 0.09, 0.18 );
-		$content .= $this->pdf_text( $x, 348, 13, __( 'Webshop', 'toko-lariso-giftcards' ) . ':', $page_h, 0.49, 0.29, 0.71 );
+		$content .= $this->pdf_text( $x, 348, 13, __( 'Webshop link', 'toko-lariso-giftcards' ) . ':', $page_h, 0.49, 0.29, 0.71 );
 		$link_y = 370;
-		foreach ( array_slice( $this->wrap_pdf_text( $this->display_url_for_pdf( $redeem_url ), 38 ), 0, 3 ) as $line ) {
-			$content .= $this->pdf_text( $x, $link_y, 11, $line, $page_h, 0.05, 0.09, 0.18 );
-			$link_y += 15;
+		foreach ( array_slice( $this->wrap_pdf_text( $this->display_url_for_pdf( $redeem_url ), 31 ), 0, 5 ) as $line ) {
+			$content .= $this->pdf_text( $x, $link_y, 9, $line, $page_h, 0.05, 0.09, 0.18 );
+			$link_y += 12;
 		}
 
 		if ( $qr_matrix ) {
@@ -374,7 +375,27 @@ class Toko_Lariso_Giftcards_PDF {
 	 */
 	private function display_url_for_pdf( string $url ): string {
 		$url = preg_replace( '#^https?://#i', '', $url );
-		return $url ? $url : '';
+		return $url ? untrailingslashit( $url ) : '';
+	}
+
+	/**
+	 * Converts a hex color to PDF RGB floats.
+	 *
+	 * @param string             $hex Hex color.
+	 * @param array<int,float>   $fallback Fallback RGB floats.
+	 * @return array<int,float>
+	 */
+	private function pdf_rgb_from_hex( string $hex, array $fallback ): array {
+		$hex = ltrim( trim( $hex ), '#' );
+		if ( 6 !== strlen( $hex ) || ! ctype_xdigit( $hex ) ) {
+			return $fallback;
+		}
+
+		return array(
+			hexdec( substr( $hex, 0, 2 ) ) / 255,
+			hexdec( substr( $hex, 2, 2 ) ) / 255,
+			hexdec( substr( $hex, 4, 2 ) ) / 255,
+		);
 	}
 
 	/**

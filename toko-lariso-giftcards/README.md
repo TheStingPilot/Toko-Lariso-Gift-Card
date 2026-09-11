@@ -18,7 +18,7 @@ Text domain: `toko-lariso-giftcards`.
 
 ## Installation
 
-1. Upload `toko-lariso-giftcards-0.1.28.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
+1. Upload `toko-lariso-giftcards-0.1.32.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
 2. Activate `Toko Lariso Giftcards`.
 3. Go to WooCommerce > Toko Lariso Giftcards > Settings.
 4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, PDF settings, refund behavior, and uninstall behavior.
@@ -76,7 +76,7 @@ The plugin blocks adding a giftcard to a cart that already contains regular prod
 
 After the purchase order is successfully paid and the giftcard has been issued, the order details page shows a `Giftcard PDFs` section with a download button for each purchased giftcard. The PDF contains the giftcard amount, full code, recipient, optional sender name, expiry date, message, webshop URL, QR code, and the selected design when it can be embedded.
 
-The PDF header can include a configured company logo. Go to WooCommerce > Toko Lariso Giftcards > Settings > PDF settings to choose the logo and the giftcard redeem URL. The generated QR code stores the redeem URL plus the giftcard code as `tokolariso_giftcard`, so scanning it opens the shop and applies the code automatically.
+The PDF header can include a configured company logo and header background color. Go to WooCommerce > Toko Lariso Giftcards > Settings > PDF settings to choose the logo, banner color, and giftcard redeem URL. The generated QR code and the printed webshop link store the redeem URL plus the giftcard code as `tokolariso_giftcard`, so scanning or typing the link opens the shop and applies the code automatically.
 
 The built-in PDF generator is self-contained and does not require a third-party PDF library. Local JPEG attachment images are embedded directly. Other local image types supported by the active WordPress image editor, such as PNG or WebP, are converted to a cached JPEG for PDF embedding. Remote or unreadable images fall back to a clean text/card layout, so PDF creation remains reliable.
 
@@ -86,7 +86,7 @@ PDF download URLs use a nonce and require either the matching order key, the own
 
 Cart and Checkout Blocks display a Giftcard field below the coupon area. The Store API callback applies or removes giftcards from the WooCommerce session and recalculates the cart.
 
-Giftcard PDFs and QR codes can link shoppers to a configured redeem URL with the full giftcard code embedded in the URL. When a visitor opens that URL, the plugin applies the code to the WooCommerce session and redirects to the same page without the code in the address bar.
+Giftcard PDFs and QR codes can link shoppers to a configured redeem URL with the full giftcard code embedded in the URL. When a visitor opens that URL, the plugin applies the code to the WooCommerce session and redirects to the same page without the code in the address bar. If the shopper has an empty cart, the code is stored in WooCommerce session plus a short-lived HttpOnly cookie and applied automatically after products are added to the cart.
 
 The giftcard field has an optional `Amount to use` input. Leave it empty to use as much of the giftcard as possible, or enter a lower amount to make a deliberate partial redemption. For example, with a EUR 50 giftcard and a EUR 60 order, entering EUR 25 leaves EUR 35 to pay with iDEAL/card and keeps EUR 25 on the giftcard.
 

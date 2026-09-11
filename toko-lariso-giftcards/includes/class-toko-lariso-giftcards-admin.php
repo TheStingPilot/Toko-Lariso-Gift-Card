@@ -83,9 +83,10 @@ class Toko_Lariso_Giftcards_Admin {
 			return;
 		}
 
-		wp_enqueue_style( 'tokolariso-giftcards-admin', TOKO_LARISO_GIFTCARDS_URL . 'assets/css/admin.css', array(), TOKO_LARISO_GIFTCARDS_VERSION );
+		wp_enqueue_style( 'wp-color-picker' );
+		wp_enqueue_style( 'tokolariso-giftcards-admin', TOKO_LARISO_GIFTCARDS_URL . 'assets/css/admin.css', array( 'wp-color-picker' ), TOKO_LARISO_GIFTCARDS_VERSION );
 		wp_enqueue_media();
-		wp_enqueue_script( 'tokolariso-giftcards-admin', TOKO_LARISO_GIFTCARDS_URL . 'assets/js/admin.js', array( 'jquery' ), TOKO_LARISO_GIFTCARDS_VERSION, true );
+		wp_enqueue_script( 'tokolariso-giftcards-admin', TOKO_LARISO_GIFTCARDS_URL . 'assets/js/admin.js', array( 'jquery', 'wp-color-picker' ), TOKO_LARISO_GIFTCARDS_VERSION, true );
 	}
 
 	/**
@@ -485,6 +486,13 @@ class Toko_Lariso_Giftcards_Admin {
 					<td>
 						<input id="giftcard_redeem_url" name="settings[giftcard_redeem_url]" type="url" class="regular-text" value="<?php echo esc_url( (string) $settings['giftcard_redeem_url'] ); ?>" />
 						<p class="description"><?php esc_html_e( 'Used in PDFs and QR codes. The giftcard code is added automatically as tokolariso_giftcard.', 'toko-lariso-giftcards' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="pdf_header_color"><?php esc_html_e( 'PDF header color', 'toko-lariso-giftcards' ); ?></label></th>
+					<td>
+						<input id="pdf_header_color" name="settings[pdf_header_color]" type="text" class="tokolariso-color-field" value="<?php echo esc_attr( (string) $settings['pdf_header_color'] ); ?>" data-default-color="#7d49b4" />
+						<p class="description"><?php esc_html_e( 'Background color for the giftcard PDF header banner.', 'toko-lariso-giftcards' ); ?></p>
 					</td>
 				</tr>
 			</table>

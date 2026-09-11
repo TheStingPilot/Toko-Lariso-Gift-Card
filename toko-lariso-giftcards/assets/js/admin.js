@@ -1,6 +1,8 @@
 (function ($) {
 	'use strict';
 
+	$('.tokolariso-color-field').wpColorPicker();
+
 	$(document).on('click', '[data-tokolariso-media-select]', function (event) {
 		event.preventDefault();
 

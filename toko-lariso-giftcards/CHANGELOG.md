@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.1.32
+
+- Split giftcard redeem-link handling into early "remember code" and later "apply code" phases.
+- Records pending redeem-link codes during `wp_loaded`, before cart/checkout rendering.
+- Uses WooCommerce's cookie helper plus normal cookie headers and forces a WooCommerce customer session cookie when storing a pending code.
+- Keeps a pending code after transient apply failures, clearing it only after successful apply or definitive invalid-code failures.
+- Added debug events for pending redeem-link save/apply failures.
+- Added an admin setting for the giftcard PDF header banner background color.
+
+## 0.1.31
+
+- Made QR/redeem-link memory more robust by explicitly loading WooCommerce cart/session before handling the URL.
+- Stores pending QR/redeem giftcard codes in both WooCommerce session and a short-lived HttpOnly cookie.
+- Retries pending code application after WooCommerce loads the cart from session and after add-to-cart.
+
+## 0.1.30
+
+- Improved the giftcard PDF header logo/title spacing.
+- Restored the giftcard code in the visible PDF webshop link so the automatic redeem URL can be checked without scanning the QR code.
+- Wrapped the visible PDF link more tightly so it stays clear of the QR code.
+
+## 0.1.29
+
+- Changed the visible PDF webshop URL to omit the embedded giftcard code so the printed URL no longer collides with the QR code.
+- Added a short-lived pending giftcard cookie for QR/redeem links opened with an empty cart.
+- Automatically applies the remembered giftcard code once the shopper later adds products or opens cart/checkout with products.
+- Clears the pending cookie after a successful or failed apply attempt.
+
 ## 0.1.28
 
 - Added PDF settings for a company logo in the giftcard PDF header.
