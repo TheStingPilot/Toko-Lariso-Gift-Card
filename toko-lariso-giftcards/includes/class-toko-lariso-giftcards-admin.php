@@ -73,7 +73,7 @@ class Toko_Lariso_Giftcards_Admin {
 	}
 
 	/**
-	 * Enqueues admin CSS.
+	 * Enqueues admin assets.
 	 *
 	 * @param string $hook Hook suffix.
 	 * @return void
@@ -84,6 +84,8 @@ class Toko_Lariso_Giftcards_Admin {
 		}
 
 		wp_enqueue_style( 'tokolariso-giftcards-admin', TOKO_LARISO_GIFTCARDS_URL . 'assets/css/admin.css', array(), TOKO_LARISO_GIFTCARDS_VERSION );
+		wp_enqueue_media();
+		wp_enqueue_script( 'tokolariso-giftcards-admin', TOKO_LARISO_GIFTCARDS_URL . 'assets/js/admin.js', array( 'jquery' ), TOKO_LARISO_GIFTCARDS_VERSION, true );
 	}
 
 	/**
@@ -399,6 +401,8 @@ class Toko_Lariso_Giftcards_Admin {
 	 */
 	private function render_settings(): void {
 		$settings = $this->settings->all();
+		$logo_id  = absint( $settings['pdf_logo_image_id'] ?? 0 );
+		$logo_url = $logo_id ? wp_get_attachment_image_url( $logo_id, 'medium' ) : '';
 		?>
 		<form method="post" class="tokolariso-settings-form">
 			<?php wp_nonce_field( 'tokolariso_giftcards_save_settings' ); ?>
@@ -460,6 +464,28 @@ class Toko_Lariso_Giftcards_Admin {
 				<tr>
 					<th><label for="email_shop_url"><?php esc_html_e( 'Shop URL', 'toko-lariso-giftcards' ); ?></label></th>
 					<td><input id="email_shop_url" name="settings[email_shop_url]" type="url" class="regular-text" value="<?php echo esc_url( (string) $settings['email_shop_url'] ); ?>" /></td>
+				</tr>
+				<tr><th colspan="2"><h2><?php esc_html_e( 'PDF settings', 'toko-lariso-giftcards' ); ?></h2></th></tr>
+				<tr>
+					<th><label for="pdf_logo_image_id"><?php esc_html_e( 'PDF logo', 'toko-lariso-giftcards' ); ?></label></th>
+					<td>
+						<input id="pdf_logo_image_id" name="settings[pdf_logo_image_id]" type="hidden" value="<?php echo esc_attr( (string) $logo_id ); ?>" />
+						<div class="tokolariso-media-preview" id="tokolariso_pdf_logo_preview">
+							<?php if ( $logo_url ) : ?>
+								<img src="<?php echo esc_url( $logo_url ); ?>" alt="" />
+							<?php endif; ?>
+						</div>
+						<button type="button" class="button" data-tokolariso-media-select data-target="#pdf_logo_image_id" data-preview="#tokolariso_pdf_logo_preview"><?php esc_html_e( 'Choose logo', 'toko-lariso-giftcards' ); ?></button>
+						<button type="button" class="button" data-tokolariso-media-clear data-target="#pdf_logo_image_id" data-preview="#tokolariso_pdf_logo_preview"><?php esc_html_e( 'Clear logo', 'toko-lariso-giftcards' ); ?></button>
+						<p class="description"><?php esc_html_e( 'Used in the purple header of generated giftcard PDFs.', 'toko-lariso-giftcards' ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th><label for="giftcard_redeem_url"><?php esc_html_e( 'Giftcard redeem URL', 'toko-lariso-giftcards' ); ?></label></th>
+					<td>
+						<input id="giftcard_redeem_url" name="settings[giftcard_redeem_url]" type="url" class="regular-text" value="<?php echo esc_url( (string) $settings['giftcard_redeem_url'] ); ?>" />
+						<p class="description"><?php esc_html_e( 'Used in PDFs and QR codes. The giftcard code is added automatically as tokolariso_giftcard.', 'toko-lariso-giftcards' ); ?></p>
+					</td>
 				</tr>
 			</table>
 			<p class="description"><?php esc_html_e( 'Available placeholders: {recipient_name}, {code}, {amount}, {balance}, {expires_at}, {message}.', 'toko-lariso-giftcards' ); ?></p>

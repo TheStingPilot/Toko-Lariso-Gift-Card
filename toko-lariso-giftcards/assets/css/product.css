@@ -27,6 +27,11 @@ body.tokolariso-giftcard-product-page div.product form.cart .quantity {
 	display: none !important;
 }
 
+.single-product div.product.product-type-tokolarisogiftcard form.cart:not(.tokolariso-giftcard-cart),
+body.tokolariso-giftcard-product-page div.product form.cart:not(.tokolariso-giftcard-cart) {
+	display: none !important;
+}
+
 .tokolariso-giftcard-fields {
 	--tlg-accent: #7e4ab6;
 	--tlg-accent-dark: #61349a;

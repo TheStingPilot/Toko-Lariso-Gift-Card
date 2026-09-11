@@ -18,10 +18,10 @@ Text domain: `toko-lariso-giftcards`.
 
 ## Installation
 
-1. Upload `toko-lariso-giftcards-0.1.26.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
+1. Upload `toko-lariso-giftcards-0.1.28.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
 2. Activate `Toko Lariso Giftcards`.
 3. Go to WooCommerce > Toko Lariso Giftcards > Settings.
-4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, refund behavior, and uninstall behavior.
+4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, PDF settings, refund behavior, and uninstall behavior.
 
 ## Creating a Giftcard Product
 
@@ -40,6 +40,8 @@ Giftcard products are intentionally treated as real, non-virtual WooCommerce pro
 WooCommerce's default product gallery is hidden on giftcard product pages, because the giftcard builder is the primary image/design interface. Product gallery zoom is disabled and remaining zoom overlay elements are removed defensively, so selecting a design image does not open the magnifying-glass zoom overlay.
 
 The plugin renders the giftcard builder only inside its own add-to-cart form. It does not hook the builder into WooCommerce's generic `woocommerce_before_add_to_cart_button` action, so themes that also render the default simple-product form cannot duplicate the giftcard interface. Quantity is forced to `1`, because every giftcard needs its own recipient, message, design, delivery date, and generated code.
+
+On giftcard product pages, any theme/default WooCommerce `form.cart` that is not the Toko Lariso giftcard form is hidden as a defensive fallback. This prevents a second add-to-cart button from appearing above the builder.
 
 Giftcard products also opt out of WooCommerce's AJAX add-to-cart feature. A catalog/category button therefore sends the customer to the giftcard product page instead of adding an incomplete giftcard line without recipient details.
 
@@ -72,7 +74,9 @@ The plugin blocks adding a giftcard to a cart that already contains regular prod
 
 ## Giftcard PDF Downloads
 
-After the purchase order is successfully paid and the giftcard has been issued, the order details page shows a `Giftcard PDFs` section with a download button for each purchased giftcard. The PDF contains the giftcard amount, full code, recipient, optional sender name, expiry date, message, and the selected design when it can be embedded.
+After the purchase order is successfully paid and the giftcard has been issued, the order details page shows a `Giftcard PDFs` section with a download button for each purchased giftcard. The PDF contains the giftcard amount, full code, recipient, optional sender name, expiry date, message, webshop URL, QR code, and the selected design when it can be embedded.
+
+The PDF header can include a configured company logo. Go to WooCommerce > Toko Lariso Giftcards > Settings > PDF settings to choose the logo and the giftcard redeem URL. The generated QR code stores the redeem URL plus the giftcard code as `tokolariso_giftcard`, so scanning it opens the shop and applies the code automatically.
 
 The built-in PDF generator is self-contained and does not require a third-party PDF library. Local JPEG attachment images are embedded directly. Other local image types supported by the active WordPress image editor, such as PNG or WebP, are converted to a cached JPEG for PDF embedding. Remote or unreadable images fall back to a clean text/card layout, so PDF creation remains reliable.
 
@@ -81,6 +85,8 @@ PDF download URLs use a nonce and require either the matching order key, the own
 ## Redemption
 
 Cart and Checkout Blocks display a Giftcard field below the coupon area. The Store API callback applies or removes giftcards from the WooCommerce session and recalculates the cart.
+
+Giftcard PDFs and QR codes can link shoppers to a configured redeem URL with the full giftcard code embedded in the URL. When a visitor opens that URL, the plugin applies the code to the WooCommerce session and redirects to the same page without the code in the address bar.
 
 The giftcard field has an optional `Amount to use` input. Leave it empty to use as much of the giftcard as possible, or enter a lower amount to make a deliberate partial redemption. For example, with a EUR 50 giftcard and a EUR 60 order, entering EUR 25 leaves EUR 35 to pay with iDEAL/card and keeps EUR 25 on the giftcard.
 
@@ -136,6 +142,7 @@ Open WooCommerce > Toko Lariso Giftcards to:
 - See the installed plugin version at the top of the admin screen
 - View initial balance, current balance, status, expiry, purchase order, redemption orders, and ledger
 - View the full giftcard code on the admin-only giftcard detail screen for testing or manual recipient support
+- Configure the PDF header logo and redeem URL used for generated PDFs and QR codes
 - Change status and expiry
 - Apply a manual balance correction with a required reason
 - Resend the giftcard email

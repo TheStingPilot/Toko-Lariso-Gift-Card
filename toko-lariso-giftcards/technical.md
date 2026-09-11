@@ -15,7 +15,7 @@ The plugin is a conventional WordPress/WooCommerce plugin with small service cla
 - `Toko_Lariso_Giftcards_Store_API`: WooCommerce Store API extension data and `cart/extensions` update callback.
 - `Toko_Lariso_Giftcards_Blocks_Integration`: Cart/Checkout Blocks asset registration via WooCommerce Blocks `IntegrationInterface`, with current `wc-blocks-data-store` dependency detection and fallback for older Blocks builds.
 - `Toko_Lariso_Giftcards_Order`: checkout payment preparation, delayed giftcard redemption after successful payment, giftcard issuance after successful payment, and refund handling.
-- `Toko_Lariso_Giftcards_PDF`: secured order-detail PDF download links and a self-contained one-page PDF generator for issued giftcards.
+- `Toko_Lariso_Giftcards_PDF`: secured order-detail PDF download links and a self-contained one-page PDF generator for issued giftcards, including local image conversion and QR output.
 - `Toko_Lariso_Giftcards_My_Account`: My Account balance checker endpoint and `[tokolariso_giftcard_balance]` shortcode.
 - `Toko_Lariso_Giftcards_Admin`: WooCommerce submenu for giftcard management.
 - `Toko_Lariso_Giftcards_Email`: WooCommerce mailer integration for recipient emails.
@@ -102,7 +102,7 @@ Giftcards may not be mixed with regular products in one cart. The add-to-cart va
 
 On giftcard product pages, WooCommerce's default gallery is hidden and replaced by the custom giftcard builder. Gallery zoom support is disabled via `woocommerce_single_product_zoom_enabled`, giftcard-only body classes, and removal of `wc-product-gallery-zoom` theme support for the current request. Product/gallery images remain selectable as giftcard designs inside the builder, and remaining zoom overlay DOM is removed defensively by `assets/js/product.js`.
 
-The product page uses a custom visual builder in `assets/css/product.css` and `assets/js/product.js`. The builder keeps WooCommerce's existing add-to-cart form and field names but becomes the primary interface by hiding the standard gallery/product meta, widening the product summary, and adding a live preview, amount swatches, selectable design thumbnails, recipient information, optional sender name, message character counter, and delivery date. Sender name is stored on the order item for display/PDF use, not in the giftcard database table. The builder renders only through the custom product add-to-cart form and also has a `woocommerce_single_product_summary` fallback for themes that skip the custom product-type action. It is not attached to the generic `woocommerce_before_add_to_cart_button` action, which prevents themes that also render the default simple-product form from showing two giftcard builders. Product-page quantity controls are hidden and forced to `1` defensively. For the existing Toko Lariso product page, the plugin also treats products with SKU prefix `CADEAUKAART` or a title/slug containing `cadeaukaart`/`giftcard` as giftcard products, so a previously saved simple product does not lose the builder.
+The product page uses a custom visual builder in `assets/css/product.css` and `assets/js/product.js`. The builder keeps WooCommerce's existing add-to-cart form and field names but becomes the primary interface by hiding the standard gallery/product meta, widening the product summary, and adding a live preview, amount swatches, selectable design thumbnails, recipient information, optional sender name, message character counter, and delivery date. Sender name is stored on the order item for display/PDF use, not in the giftcard database table. The builder renders only through the custom product add-to-cart form and also has a `woocommerce_single_product_summary` fallback for themes that skip the custom product-type action. It is not attached to the generic `woocommerce_before_add_to_cart_button` action, which prevents themes that also render the default simple-product form from showing two giftcard builders. Product-page quantity controls are hidden and forced to `1` defensively. Theme/default `form.cart` output that is not `.tokolariso-giftcard-cart` is also hidden on giftcard product pages to prevent duplicate add-to-cart buttons. For the existing Toko Lariso product page, the plugin also treats products with SKU prefix `CADEAUKAART` or a title/slug containing `cadeaukaart`/`giftcard` as giftcard products, so a previously saved simple product does not lose the builder.
 
 ## Giftcard PDF Generation
 
@@ -115,6 +115,13 @@ The download endpoint is handled during `template_redirect` with query parameter
 - The request contains the matching WooCommerce order key.
 
 The generator does not depend on a bundled Composer/PDF package. It writes a minimal PDF 1.4 document directly. Local JPEG attachment images are embedded as `/DCTDecode` image XObjects. Other local image types are converted through WordPress' configured image editor to cached JPEG files under `uploads/tokolariso-giftcards/pdf-cache/` before embedding. Remote, unreadable, or unsupported images fall back to a designed text card so the download still succeeds. The full code is decrypted only inside the authorized PDF request and is not stored in plaintext order meta or exposed in Store API data.
+
+PDF settings are stored with the normal plugin settings:
+
+- `pdf_logo_image_id`: optional media attachment shown in the purple PDF header. Non-JPEG logos follow the same local JPEG cache conversion path as giftcard designs.
+- `giftcard_redeem_url`: base URL for PDF text and QR codes. The PDF service appends the full giftcard code as the `tokolariso_giftcard` query parameter.
+
+The QR code is generated locally as vector rectangles inside the PDF. It uses a fixed Version 6-L byte-mode matrix, which is sufficient for the configured redeem URL plus a Toko Lariso giftcard code. If the URL becomes too long for that matrix, the PDF still shows the readable webshop URL and debug logging records `pdf_qr_payload_too_long`.
 
 ## Database Tables
 
@@ -188,6 +195,7 @@ This prevents two concurrent successful checkout/payment requests from spending 
 - `woocommerce_store_api_checkout_order_processed` at priority `1` for SendCloud session normalization
 - `woocommerce_add_to_cart_validation`
 - `woocommerce_add_cart_item_data`
+- `template_redirect` for applying a giftcard code from a PDF/QR redeem URL
 - `woocommerce_before_calculate_totals`
 - `woocommerce_after_calculate_totals`
 - `woocommerce_get_item_data`

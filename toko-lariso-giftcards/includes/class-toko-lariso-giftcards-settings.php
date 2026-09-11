@@ -41,6 +41,8 @@ class Toko_Lariso_Giftcards_Settings {
 			'email_intro'              => 'A giftcard has been prepared for you.',
 			'email_button_label'       => 'Shop at Toko Lariso',
 			'email_shop_url'           => home_url( '/' ),
+			'pdf_logo_image_id'        => 0,
+			'giftcard_redeem_url'      => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : home_url( '/' ),
 		);
 	}
 
@@ -91,6 +93,8 @@ class Toko_Lariso_Giftcards_Settings {
 		$output['email_intro']        = sanitize_textarea_field( (string) ( $input['email_intro'] ?? $defaults['email_intro'] ) );
 		$output['email_button_label'] = sanitize_text_field( (string) ( $input['email_button_label'] ?? $defaults['email_button_label'] ) );
 		$output['email_shop_url']     = esc_url_raw( (string) ( $input['email_shop_url'] ?? $defaults['email_shop_url'] ) );
+		$output['pdf_logo_image_id']  = absint( $input['pdf_logo_image_id'] ?? $defaults['pdf_logo_image_id'] );
+		$output['giftcard_redeem_url'] = esc_url_raw( (string) ( $input['giftcard_redeem_url'] ?? $defaults['giftcard_redeem_url'] ) );
 
 		update_option( self::OPTION_KEY, $output, false );
 	}

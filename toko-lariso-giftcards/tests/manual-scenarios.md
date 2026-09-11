@@ -226,6 +226,22 @@ Expected:
 - Mollie should not receive EUR 41.90 for a fully covered order.
 - Disable debug logging after the test.
 
+## 8d. Giftcard PDF Logo and QR Redeem URL
+
+1. Go to WooCommerce > Toko Lariso Giftcards > Settings.
+2. Choose a PDF logo image and set the giftcard redeem URL to the checkout or cart page.
+3. Buy and pay for a giftcard.
+4. Download the giftcard PDF from the paid order detail page.
+5. Scan the QR code from the PDF in a private/incognito browser session.
+
+Expected:
+
+- The PDF header shows the configured logo.
+- The PDF shows the webshop URL.
+- The QR URL contains `tokolariso_giftcard` with the full code.
+- Opening the QR URL applies the giftcard to the WooCommerce session.
+- The browser is redirected to the same page without the full code in the address bar.
+
 ## 8a. Repeated Apply Clicks During Checkout Updates
 
 1. Open Checkout Block with a valid cart.
@@ -321,6 +337,7 @@ Expected:
 - No magnifying-glass zoom overlay appears on the giftcard product page.
 - The default WooCommerce product gallery is not visible above or next to the giftcard builder.
 - The giftcard builder appears once, not once inside a default simple-product form and again below the product summary.
+- Only one add-to-cart button is visible on the giftcard product page.
 - The quantity control is hidden/forced to `1`.
 - Catalog/category add-to-cart buttons do not AJAX-add a giftcard directly; they open the product page so the builder can capture the recipient, amount, message, and design.
 - The admin page shows the installed plugin version near the top.

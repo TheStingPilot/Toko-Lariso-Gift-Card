@@ -94,7 +94,7 @@ final class Toko_Lariso_Giftcards_Plugin {
 		$this->cart->init();
 		( new Toko_Lariso_Giftcards_Store_API( $this->settings, $this->repository, $this->cart ) )->init();
 		( new Toko_Lariso_Giftcards_Order( $this->settings, $this->repository, $this->email, $this->cart ) )->init();
-		( new Toko_Lariso_Giftcards_PDF( $this->repository ) )->init();
+		( new Toko_Lariso_Giftcards_PDF( $this->settings, $this->repository ) )->init();
 		( new Toko_Lariso_Giftcards_My_Account( $this->repository ) )->init();
 
 		if ( is_admin() ) {

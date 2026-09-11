@@ -53,6 +53,33 @@ class Toko_Lariso_Giftcards_Cart {
 		add_action( 'woocommerce_check_cart_items', array( $this, 'validate_cart_item_mix' ) );
 		add_action( 'woocommerce_checkout_process', array( $this, 'validate_cart_item_mix' ) );
 		add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'add_order_item_meta' ), 10, 4 );
+		add_action( 'template_redirect', array( $this, 'maybe_apply_giftcard_from_url' ) );
+	}
+
+	/**
+	 * Applies a giftcard code from a PDF/QR URL and removes it from the address bar.
+	 *
+	 * @return void
+	 */
+	public function maybe_apply_giftcard_from_url(): void {
+		if ( is_admin() || empty( $_GET['tokolariso_giftcard'] ) || ! function_exists( 'WC' ) || ! WC()->session ) {
+			return;
+		}
+
+		$code = sanitize_text_field( wp_unslash( $_GET['tokolariso_giftcard'] ) );
+		if ( '' === $code ) {
+			return;
+		}
+
+		try {
+			$this->apply_code_to_session( $code );
+			wc_add_notice( __( 'Giftcard applied.', 'toko-lariso-giftcards' ), 'success' );
+		} catch ( Throwable $exception ) {
+			wc_add_notice( $exception->getMessage(), 'error' );
+		}
+
+		wp_safe_redirect( remove_query_arg( 'tokolariso_giftcard' ) );
+		exit;
 	}
 
 	/**
