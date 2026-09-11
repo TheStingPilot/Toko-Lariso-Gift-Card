@@ -52,6 +52,8 @@ The cart and VAT calculation are deliberately left untouched. The plugin does no
 
 The shopper may optionally set a maximum giftcard amount to use when applying the code in Cart/Checkout Blocks. A zero or empty limit means "use as much as possible up to the giftcard balance and cart total"; a positive limit caps that giftcard allocation before the remaining payment-method amount is calculated. This is still a payment allocation only and does not alter WooCommerce line totals, shipping totals, VAT bases, or VAT display tables.
 
+Giftcard payment is blocked whenever the cart contains a giftcard product. The rule applies to giftcard-only carts and mixed carts with both giftcards and normal products. Existing session applications are cleared during cart allocation refresh, and the Store API apply callback throws before applying the submitted code. This prevents customers from extending giftcard validity by using one giftcard to buy another giftcard.
+
 At order creation, the plugin prepares a pending giftcard partial payment and stores metadata for the original tax-inclusive total, giftcard payment total, and remaining payment-method amount. No negative order fee item is created. The order total is set to the remaining amount so the selected payment method charges only that amount, while product and shipping VAT bases remain unchanged.
 
 The giftcard balance is not deducted during external payment redirection. A Mollie/iDEAL cancellation or failed payment therefore leaves the giftcard balance untouched. The ledger redemption runs after `woocommerce_payment_complete`, `processing`, or `completed`, or immediately for a zero-payment order fully covered by giftcard credit.

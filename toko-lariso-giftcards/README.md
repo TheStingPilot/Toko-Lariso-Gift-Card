@@ -18,7 +18,7 @@ Text domain: `toko-lariso-giftcards`.
 
 ## Installation
 
-1. Upload `toko-lariso-giftcards-0.1.23.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
+1. Upload `toko-lariso-giftcards-0.1.24.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
 2. Activate `Toko Lariso Giftcards`.
 3. Go to WooCommerce > Toko Lariso Giftcards > Settings.
 4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, refund behavior, and uninstall behavior.
@@ -82,6 +82,8 @@ PDF download URLs use a nonce and require either the matching order key, the own
 Cart and Checkout Blocks display a Giftcard field below the coupon area. The Store API callback applies or removes giftcards from the WooCommerce session and recalculates the cart.
 
 The giftcard field has an optional `Amount to use` input. Leave it empty to use as much of the giftcard as possible, or enter a lower amount to make a deliberate partial redemption. For example, with a EUR 50 giftcard and a EUR 60 order, entering EUR 25 leaves EUR 35 to pay with iDEAL/card and keeps EUR 25 on the giftcard.
+
+Giftcards cannot be used to buy giftcards. When the cart contains a giftcard product, including a mixed cart with regular products, the giftcard payment field is disabled and any already applied giftcard payment is removed from the session.
 
 At checkout, the plugin prepares the giftcard as a pending partial payment and changes the payable WooCommerce order total to the remaining amount. That remaining amount is what payment gateways such as Mollie should receive. The giftcard balance is not deducted at this point.
 

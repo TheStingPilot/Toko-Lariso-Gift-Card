@@ -200,6 +200,16 @@ class Toko_Lariso_Giftcards_Store_API {
 				'type'        => 'boolean',
 				'readonly'    => true,
 			),
+			'can_apply'               => array(
+				'description' => __( 'Whether giftcard payment can be applied to the current cart.', 'toko-lariso-giftcards' ),
+				'type'        => 'boolean',
+				'readonly'    => true,
+			),
+			'blocked_message'         => array(
+				'description' => __( 'Reason giftcard payment is blocked.', 'toko-lariso-giftcards' ),
+				'type'        => 'string',
+				'readonly'    => true,
+			),
 		);
 	}
 

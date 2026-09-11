@@ -166,6 +166,10 @@
 		var extensionData = useGiftcardExtensionData();
 		var applied = Array.isArray( extensionData.applied ) ? extensionData.applied : [];
 		var allowMultiple = extensionData.allow_multiple !== false;
+		var canApply = extensionData.can_apply !== false;
+		var blockedMessage =
+			extensionData.blocked_message ||
+			__( 'Giftcards cannot be used to buy another giftcard.', 'toko-lariso-giftcards' );
 		var renderAppliedInPanel = ! ExperimentalOrderMeta;
 		var state = useState( '' );
 		var code = state[ 0 ];
@@ -181,6 +185,10 @@
 		function onApply( event ) {
 			event.preventDefault();
 			if ( busy || pendingUpdate ) {
+				return;
+			}
+			if ( ! canApply ) {
+				setMessage( blockedMessage );
 				return;
 			}
 			if ( ! code.trim() ) {
@@ -234,6 +242,9 @@
 			'div',
 			{ className: 'wc-block-components-totals-wrapper tokolariso-giftcard-block' },
 			createElement( 'strong', { className: 'tokolariso-giftcard-title' }, __( 'Giftcard', 'toko-lariso-giftcards' ) ),
+			! canApply
+				? createElement( 'p', { className: 'tokolariso-giftcard-message tokolariso-giftcard-message--blocked' }, blockedMessage )
+				: null,
 			createElement(
 				'form',
 				{ className: 'tokolariso-giftcard-form', onSubmit: onApply },
@@ -244,7 +255,7 @@
 						setCode( event.target.value );
 					},
 					placeholder: __( 'Enter giftcard code', 'toko-lariso-giftcards' ),
-					disabled: busy || pendingUpdate,
+					disabled: ! canApply || busy || pendingUpdate,
 					autoComplete: 'off',
 				} ),
 				createElement( 'input', {
@@ -255,14 +266,14 @@
 					},
 					placeholder: __( 'Amount to use (optional)', 'toko-lariso-giftcards' ),
 					'aria-label': __( 'Maximum giftcard amount to use', 'toko-lariso-giftcards' ),
-					disabled: busy || pendingUpdate,
+					disabled: ! canApply || busy || pendingUpdate,
 					inputMode: 'decimal',
 				} ),
 				createElement(
 					'button',
 					{
 						type: 'submit',
-						disabled: busy || pendingUpdate,
+						disabled: ! canApply || busy || pendingUpdate,
 						className: 'tokolariso-giftcard-apply wp-element-button',
 						onClick: function ( event ) {
 							event.stopPropagation();

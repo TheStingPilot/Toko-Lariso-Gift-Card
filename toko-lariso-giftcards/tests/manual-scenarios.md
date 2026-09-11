@@ -84,7 +84,21 @@ Expected:
 - In the EUR 44.45 + EUR 6.95 example, the WooCommerce/VAT total remains EUR 51.40 and the remaining payment-method amount is EUR 1.40.
 - The giftcard widget shows plain text amounts such as `EUR 50.00`, without raw HTML entities.
 
-## 3b. Customer-Limited Giftcard Use
+## 3b. Giftcard Payment Is Blocked When Buying a Giftcard
+
+1. Add a `Toko Lariso giftcard` product to the cart.
+2. Optionally add a normal physical product as well.
+3. Open Cart/Checkout Blocks.
+4. Try to apply a valid giftcard code.
+
+Expected:
+
+- The giftcard payment field is disabled or shows a blocking message.
+- The Store API refuses the apply action even if the request is sent manually.
+- No giftcard allocation remains in the session.
+- The customer can only pay the order with a normal payment method.
+
+## 3c. Customer-Limited Giftcard Use
 
 1. Create a cart with a total of EUR 60.00 including VAT and shipping.
 2. Apply a EUR 50 giftcard.

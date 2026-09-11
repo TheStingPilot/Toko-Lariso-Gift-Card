@@ -390,6 +390,14 @@ class Toko_Lariso_Giftcards_Order {
 			return;
 		}
 
+		if ( $this->cart->cart_contains_giftcard_purchase() ) {
+			$this->cart->clear_session();
+			$this->clear_prepared_payment_meta( $order );
+			$order->save();
+			Toko_Lariso_Giftcards_Debug::log( 'prepare_order_skipped_giftcard_purchase_in_cart', array( 'order_id' => $order->get_id(), 'source_hook' => $source_hook ) );
+			return;
+		}
+
 		$original_total = $this->order_total_before_giftcards( $order );
 		if ( $original_total <= 0 ) {
 			Toko_Lariso_Giftcards_Debug::log( 'prepare_order_skipped_zero_original_total', array( 'order_id' => $order->get_id(), 'source_hook' => $source_hook ) );
@@ -426,11 +434,7 @@ class Toko_Lariso_Giftcards_Order {
 				return;
 			}
 
-			$order->delete_meta_data( self::ORDER_PREPARED_META );
-			$order->delete_meta_data( self::ORDER_PENDING_APPLICATIONS_META );
-			$order->delete_meta_data( self::ORDER_ORIGINAL_TOTAL_META );
-			$order->delete_meta_data( self::ORDER_GIFTCARD_PAYMENT_META );
-			$order->delete_meta_data( self::ORDER_PAYMENT_DUE_META );
+			$this->clear_prepared_payment_meta( $order );
 			Toko_Lariso_Giftcards_Debug::log(
 				'prepare_order_reset_stale_prepared_meta',
 				array(
@@ -502,6 +506,20 @@ class Toko_Lariso_Giftcards_Order {
 				$this->redeem_prepared_order( $order );
 			}
 		}
+	}
+
+	/**
+	 * Clears prepared giftcard payment metadata from a draft/reused order.
+	 *
+	 * @param WC_Order $order Order.
+	 * @return void
+	 */
+	private function clear_prepared_payment_meta( WC_Order $order ): void {
+		$order->delete_meta_data( self::ORDER_PREPARED_META );
+		$order->delete_meta_data( self::ORDER_PENDING_APPLICATIONS_META );
+		$order->delete_meta_data( self::ORDER_ORIGINAL_TOTAL_META );
+		$order->delete_meta_data( self::ORDER_GIFTCARD_PAYMENT_META );
+		$order->delete_meta_data( self::ORDER_PAYMENT_DUE_META );
 	}
 
 	/**

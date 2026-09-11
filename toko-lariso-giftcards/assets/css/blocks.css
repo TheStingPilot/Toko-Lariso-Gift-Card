@@ -76,6 +76,11 @@
 	font-weight: 600;
 }
 
+.tokolariso-giftcard-message--blocked {
+	color: #8a4b00;
+	font-size: 0.875em;
+}
+
 .tokolariso-giftcard-remaining,
 .tokolariso-giftcard-limit {
 	display: block;
