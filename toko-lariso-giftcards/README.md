@@ -18,7 +18,7 @@ Text domain: `toko-lariso-giftcards`.
 
 ## Installation
 
-1. Upload `toko-lariso-giftcards-0.1.25.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
+1. Upload `toko-lariso-giftcards-0.1.26.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
 2. Activate `Toko Lariso Giftcards`.
 3. Go to WooCommerce > Toko Lariso Giftcards > Settings.
 4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, refund behavior, and uninstall behavior.
@@ -74,7 +74,7 @@ The plugin blocks adding a giftcard to a cart that already contains regular prod
 
 After the purchase order is successfully paid and the giftcard has been issued, the order details page shows a `Giftcard PDFs` section with a download button for each purchased giftcard. The PDF contains the giftcard amount, full code, recipient, optional sender name, expiry date, message, and the selected design when it can be embedded.
 
-The built-in PDF generator is self-contained and does not require a third-party PDF library. Local JPEG attachment images are embedded directly. Other image types fall back to a clean text/card layout, so PDF creation remains reliable.
+The built-in PDF generator is self-contained and does not require a third-party PDF library. Local JPEG attachment images are embedded directly. Other local image types supported by the active WordPress image editor, such as PNG or WebP, are converted to a cached JPEG for PDF embedding. Remote or unreadable images fall back to a clean text/card layout, so PDF creation remains reliable.
 
 PDF download URLs use a nonce and require either the matching order key, the owning logged-in customer, or a WooCommerce manager/admin. The full code is not exposed through Store API responses.
 

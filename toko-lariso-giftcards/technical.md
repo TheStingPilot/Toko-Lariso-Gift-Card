@@ -114,7 +114,7 @@ The download endpoint is handled during `template_redirect` with query parameter
 - The logged-in customer owns the order.
 - The request contains the matching WooCommerce order key.
 
-The generator does not depend on a bundled Composer/PDF package. It writes a minimal PDF 1.4 document directly. Local JPEG attachment images are embedded as `/DCTDecode` image XObjects. PNG/WebP/remote or unreadable images are not fetched or converted; those PDFs fall back to a designed text card so the download still succeeds. The full code is decrypted only inside the authorized PDF request and is not stored in plaintext order meta or exposed in Store API data.
+The generator does not depend on a bundled Composer/PDF package. It writes a minimal PDF 1.4 document directly. Local JPEG attachment images are embedded as `/DCTDecode` image XObjects. Other local image types are converted through WordPress' configured image editor to cached JPEG files under `uploads/tokolariso-giftcards/pdf-cache/` before embedding. Remote, unreadable, or unsupported images fall back to a designed text card so the download still succeeds. The full code is decrypted only inside the authorized PDF request and is not stored in plaintext order meta or exposed in Store API data.
 
 ## Database Tables
 

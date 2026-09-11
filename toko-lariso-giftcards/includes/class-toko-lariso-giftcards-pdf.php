@@ -328,6 +328,11 @@ class Toko_Lariso_Giftcards_PDF {
 			return null;
 		}
 
+		$path = $this->jpeg_path_for_pdf( $path );
+		if ( ! $path || ! is_readable( $path ) ) {
+			return null;
+		}
+
 		$info = getimagesize( $path );
 		if ( ! $info || empty( $info['mime'] ) || 'image/jpeg' !== $info['mime'] ) {
 			return null;
@@ -338,6 +343,86 @@ class Toko_Lariso_Giftcards_PDF {
 			'height' => (int) $info[1],
 			'data'   => (string) file_get_contents( $path ),
 		);
+	}
+
+	/**
+	 * Gets a JPEG path for PDF embedding, converting local images when needed.
+	 *
+	 * @param string $path Source image path.
+	 * @return string
+	 */
+	private function jpeg_path_for_pdf( string $path ): string {
+		$info = getimagesize( $path );
+		if ( ! $info || empty( $info['mime'] ) ) {
+			return '';
+		}
+
+		if ( 'image/jpeg' === $info['mime'] ) {
+			return $path;
+		}
+
+		$cache_path = $this->pdf_image_cache_path( $path );
+		if ( ! $cache_path ) {
+			return '';
+		}
+
+		if ( is_readable( $cache_path ) ) {
+			return $cache_path;
+		}
+
+		$editor = wp_get_image_editor( $path );
+		if ( is_wp_error( $editor ) ) {
+			Toko_Lariso_Giftcards_Debug::log(
+				'pdf_image_conversion_editor_failed',
+				array(
+					'mime'  => (string) $info['mime'],
+					'error' => $editor->get_error_message(),
+				)
+			);
+			return '';
+		}
+
+		if ( is_callable( array( $editor, 'set_quality' ) ) ) {
+			$editor->set_quality( 90 );
+		}
+
+		$result = $editor->save( $cache_path, 'image/jpeg' );
+		if ( is_wp_error( $result ) || ! is_readable( $cache_path ) ) {
+			Toko_Lariso_Giftcards_Debug::log(
+				'pdf_image_conversion_save_failed',
+				array(
+					'mime'  => (string) $info['mime'],
+					'error' => is_wp_error( $result ) ? $result->get_error_message() : 'converted file is not readable',
+				)
+			);
+			return '';
+		}
+
+		return $cache_path;
+	}
+
+	/**
+	 * Builds a stable cache path for converted PDF images.
+	 *
+	 * @param string $source_path Source image path.
+	 * @return string
+	 */
+	private function pdf_image_cache_path( string $source_path ): string {
+		$uploads = wp_upload_dir();
+		if ( ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
+			return '';
+		}
+
+		$dir = trailingslashit( (string) $uploads['basedir'] ) . 'tokolariso-giftcards/pdf-cache';
+		if ( ! wp_mkdir_p( $dir ) ) {
+			return '';
+		}
+
+		$mtime = filemtime( $source_path );
+		$size  = filesize( $source_path );
+		$key   = md5( $source_path . '|' . ( false === $mtime ? '' : $mtime ) . '|' . ( false === $size ? '' : $size ) );
+
+		return trailingslashit( $dir ) . $key . '.jpg';
 	}
 
 	/**
