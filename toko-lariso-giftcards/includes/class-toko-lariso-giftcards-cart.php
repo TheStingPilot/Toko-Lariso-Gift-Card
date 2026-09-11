@@ -50,6 +50,8 @@ class Toko_Lariso_Giftcards_Cart {
 		add_filter( 'woocommerce_get_item_data', array( $this, 'display_cart_item_data' ), 10, 2 );
 		add_action( 'woocommerce_before_calculate_totals', array( $this, 'set_giftcard_cart_prices' ), 20 );
 		add_action( 'woocommerce_after_calculate_totals', array( $this, 'refresh_allocations_for_cart' ), 20 );
+		add_action( 'woocommerce_check_cart_items', array( $this, 'validate_cart_item_mix' ) );
+		add_action( 'woocommerce_checkout_process', array( $this, 'validate_cart_item_mix' ) );
 		add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'add_order_item_meta' ), 10, 4 );
 	}
 
@@ -272,7 +274,19 @@ class Toko_Lariso_Giftcards_Cart {
 	 */
 	public function validate_giftcard_add_to_cart( bool $passed, int $product_id, int $quantity ): bool {
 		$product = wc_get_product( $product_id );
-		if ( ! Toko_Lariso_Giftcards_Product_Type::is_giftcard_product( $product ) ) {
+		$is_giftcard = Toko_Lariso_Giftcards_Product_Type::is_giftcard_product( $product );
+
+		if ( $is_giftcard && $this->cart_contains_regular_product() ) {
+			wc_add_notice( $this->giftcard_mixed_cart_blocked_message(), 'error' );
+			return false;
+		}
+
+		if ( ! $is_giftcard ) {
+			if ( $this->cart_contains_giftcard_purchase() ) {
+				wc_add_notice( $this->giftcard_mixed_cart_blocked_message(), 'error' );
+				return false;
+			}
+
 			return $passed;
 		}
 
@@ -307,6 +321,19 @@ class Toko_Lariso_Giftcards_Cart {
 		}
 
 		return $passed;
+	}
+
+	/**
+	 * Blocks checkout for existing mixed carts created before this rule was active.
+	 *
+	 * @return void
+	 */
+	public function validate_cart_item_mix(): void {
+		if ( ! $this->cart_contains_giftcard_purchase() || ! $this->cart_contains_regular_product() ) {
+			return;
+		}
+
+		wc_add_notice( $this->giftcard_mixed_cart_blocked_message(), 'error' );
 	}
 
 	/**
@@ -663,12 +690,46 @@ class Toko_Lariso_Giftcards_Cart {
 	}
 
 	/**
+	 * Returns whether the current cart contains a non-giftcard product.
+	 *
+	 * @param WC_Cart|null $cart Cart.
+	 * @return bool
+	 */
+	public function cart_contains_regular_product( ?WC_Cart $cart = null ): bool {
+		$cart = $cart ?: ( WC()->cart ?? null );
+		if ( ! $cart ) {
+			return false;
+		}
+
+		foreach ( $cart->get_cart() as $cart_item ) {
+			if ( empty( $cart_item['data'] ) ) {
+				continue;
+			}
+
+			if ( ! Toko_Lariso_Giftcards_Product_Type::is_giftcard_product( $cart_item['data'] ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Customer-facing message when giftcard redemption is blocked.
 	 *
 	 * @return string
 	 */
 	public function giftcard_payment_blocked_message(): string {
 		return __( 'Giftcards cannot be used to buy another giftcard. Remove the giftcard product from your cart before applying a giftcard code.', 'toko-lariso-giftcards' );
+	}
+
+	/**
+	 * Customer-facing message when a cart mixes giftcards and regular products.
+	 *
+	 * @return string
+	 */
+	public function giftcard_mixed_cart_blocked_message(): string {
+		return __( 'Giftcards must be ordered separately from other products. Please place one order for the giftcard and a separate order for your other products.', 'toko-lariso-giftcards' );
 	}
 
 	/**

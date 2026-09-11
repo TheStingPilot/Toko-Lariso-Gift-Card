@@ -71,13 +71,12 @@ The shipping behavior is:
 - Giftcard products remain non-virtual and appear as normal order line items.
 - `woocommerce_product_needs_shipping` returns `false` for giftcard products so they do not participate in shipping-rate requests.
 - `woocommerce_cart_needs_shipping` and `woocommerce_cart_needs_shipping_address` remain `true` only when the cart contains a non-giftcard shippable item.
-- `woocommerce_cart_shipping_packages` keeps mixed carts as one package for Store API/Blocks stability and excludes giftcard value from `contents_cost`.
-- `woocommerce_shipping_free_shipping_is_available` prevents WooCommerce core free shipping from counting giftcard value toward the minimum amount.
-- `woocommerce_package_rates` also suppresses zero-cost/free shipping rates returned by third-party shipping plugins for mixed carts while the regular physical-product total including VAT is still below the free-shipping threshold. Local pickup-style rates are left alone.
+- `woocommerce_add_to_cart_validation`, `woocommerce_check_cart_items`, and `woocommerce_checkout_process` prevent giftcards and regular products from being ordered together.
+- Legacy mixed-cart guards remain in `woocommerce_cart_shipping_packages`, `woocommerce_shipping_free_shipping_is_available`, and `woocommerce_package_rates` as a defensive fallback, but normal checkout should never proceed with a mixed giftcard/regular-product cart.
 - `woocommerce_package_rates` still sets any giftcard-only fallback package rates to zero, including third-party rates such as SendCloud rates.
 - If another integration creates a giftcard-only package with no rates, the plugin injects a fallback `Giftcard delivery` shipping rate at zero cost.
 
-This means a cart containing only a giftcard does not need a shipping-rate lookup or a paid shipping method, while a cart with physical products still pays the normal shipping charge for those physical products without creating multiple Store API shipping packages. In a mixed cart, a EUR 50 giftcard and a EUR 3.95 physical product count as EUR 3.95 toward a EUR 45 free-shipping threshold. The fallback threshold is EUR 45 when no WooCommerce free-shipping method exposes a configured minimum; it can be overridden with `tokolariso_giftcards_free_shipping_min_amount`.
+This means a cart containing only a giftcard does not need a shipping-rate lookup or a paid shipping method, while a cart with physical products still pays the normal shipping charge for those physical products. A EUR 50 giftcard and a EUR 3.95 physical product must be split into separate orders instead of relying on third-party shipping-rate corrections.
 
 ## SendCloud Blocks Compatibility
 
@@ -98,6 +97,8 @@ The giftcard product does not use the regular WooCommerce product price as the v
 The selected amount is stored in cart item data and assigned as the cart line price during `woocommerce_before_calculate_totals`. Each add-to-cart action is limited to quantity `1` so each giftcard purchase has exactly one recipient, message, delivery date, design, and generated code. Buying multiple giftcards is supported by adding the product multiple times.
 
 The product class reports that `ajax_add_to_cart` is not supported. This keeps catalog/category buttons from bypassing the single-product giftcard builder. It intentionally does not mark the product as globally sold individually, because that could prevent shoppers from adding several separately configured giftcards as separate cart lines.
+
+Giftcards may not be mixed with regular products in one cart. The add-to-cart validation blocks both directions, and `woocommerce_check_cart_items` / `woocommerce_checkout_process` block checkout for existing mixed carts. This is a defensive compatibility rule for shipping plugins that calculate free shipping from the whole taxable goods total and do not expose enough rate data to reliably remove only the wrongly-free rate.
 
 On giftcard product pages, WooCommerce's default gallery is hidden and replaced by the custom giftcard builder. Gallery zoom support is disabled via `woocommerce_single_product_zoom_enabled`, giftcard-only body classes, and removal of `wc-product-gallery-zoom` theme support for the current request. Product/gallery images remain selectable as giftcard designs inside the builder, and remaining zoom overlay DOM is removed defensively by `assets/js/product.js`.
 

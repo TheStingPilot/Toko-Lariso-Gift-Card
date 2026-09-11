@@ -18,7 +18,7 @@ Text domain: `toko-lariso-giftcards`.
 
 ## Installation
 
-1. Upload `toko-lariso-giftcards-0.1.24.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
+1. Upload `toko-lariso-giftcards-0.1.25.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
 2. Activate `Toko Lariso Giftcards`.
 3. Go to WooCommerce > Toko Lariso Giftcards > Settings.
 4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, refund behavior, and uninstall behavior.
@@ -48,8 +48,7 @@ The plugin keeps giftcard delivery free and Blocks-safe:
 - Giftcard products remain non-virtual order line items.
 - Giftcards are excluded from shipping-rate requests so WooCommerce Cart/Checkout Blocks do not wait for giftcard delivery rates.
 - Giftcard-only carts do not require a shipping charge or shipping address.
-- Mixed carts keep normal shipping for the physical products, while the giftcard line stays in the order for admin/order integrations.
-- Mixed carts exclude giftcard value from free-shipping thresholds. A EUR 50 giftcard plus a EUR 3.95 physical product still counts as EUR 3.95 toward free shipping, not EUR 53.95.
+- Giftcards must be ordered separately from physical/regular products, so third-party shipping plugins cannot grant free delivery by counting giftcard value toward a physical-product shipping threshold.
 - A fallback `Giftcard delivery` method remains available as a safety net when a giftcard-only package is created by another integration.
 
 ## SendCloud Compatibility
@@ -68,6 +67,8 @@ Customers can then select:
 - Giftcard design from the product image/gallery
 
 Each add-to-cart action creates one giftcard purchase line with its own recipient, message, delivery date, and design. To buy multiple giftcards, add the product multiple times with the right recipient details for each card.
+
+The plugin blocks adding a giftcard to a cart that already contains regular products, blocks adding regular products to a cart that already contains a giftcard, and blocks checkout for any existing mixed cart.
 
 ## Giftcard PDF Downloads
 

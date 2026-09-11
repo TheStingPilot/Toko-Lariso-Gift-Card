@@ -152,19 +152,18 @@ Expected:
 - No shipping charge or shipping address is required for the giftcard-only cart.
 - If another integration creates a giftcard-only shipping package, its rates are forced to EUR 0.
 
-Mixed cart:
+Mixed giftcard/product cart:
 
 1. Add a `Toko Lariso giftcard` product and a normal physical product.
-2. Open checkout.
+2. Repeat in the opposite order: first a normal physical product, then a `Toko Lariso giftcard`.
+3. If an existing mixed cart is present from an older plugin version, open cart or checkout.
 
 Expected:
 
-- Cart and Checkout Blocks load normally.
-- The mixed cart remains one shipping package.
-- Normal physical products keep normal shipping.
-- Giftcard value is excluded from the package contents cost used for shipping-rate calculations.
-- Giftcard value is excluded from free-shipping thresholds. For example, with a EUR 45 free-shipping threshold, a EUR 50 giftcard plus a EUR 3.95 physical product must still require EUR 41.05 more physical-product value before paid shipping becomes free.
-- Third-party shipping methods must not show free delivery just because the combined giftcard plus product cart total is above the threshold.
+- Adding the second product type is blocked with an error notice.
+- Existing mixed carts are blocked at cart/checkout validation.
+- Customers must place a separate order for giftcards and a separate order for regular products.
+- A mixed cart must not proceed to checkout with free shipping caused by giftcard value.
 
 ## 7. Cart Block
 
