@@ -1,0 +1,94 @@
+.tokolariso-giftcard-block {
+	padding-bottom: 16px;
+}
+
+.tokolariso-giftcard-summary {
+	padding-bottom: 16px;
+	padding-top: 16px;
+}
+
+.tokolariso-giftcard-title,
+.tokolariso-giftcard-applied-heading {
+	display: block;
+	margin-bottom: 8px;
+}
+
+.tokolariso-giftcard-form {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(120px, 160px) auto;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+.tokolariso-giftcard-form input {
+	min-width: 0;
+	width: 100%;
+}
+
+.tokolariso-giftcard-apply {
+	align-items: center;
+	background: #1e252f;
+	border: 0;
+	color: #fff;
+	cursor: pointer;
+	display: inline-flex;
+	font-weight: 600;
+	justify-content: center;
+	min-height: 48px;
+	padding: 0 20px;
+	text-decoration: none;
+}
+
+.tokolariso-giftcard-apply:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+.tokolariso-giftcard-applied {
+	display: grid;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.tokolariso-giftcard-applied-row {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+	justify-content: space-between;
+}
+
+.tokolariso-giftcard-applied-row button {
+	background: transparent;
+	border: 0;
+	color: currentColor;
+	cursor: pointer;
+	padding: 0;
+	text-decoration: underline;
+}
+
+.tokolariso-giftcard-total,
+.tokolariso-giftcard-due,
+.tokolariso-giftcard-message {
+	margin: 6px 0 0;
+}
+
+.tokolariso-giftcard-due {
+	font-weight: 600;
+}
+
+.tokolariso-giftcard-remaining,
+.tokolariso-giftcard-limit {
+	display: block;
+	margin-top: 2px;
+}
+
+@media (max-width: 480px) {
+	.tokolariso-giftcard-form {
+		grid-template-columns: 1fr;
+	}
+
+	.tokolariso-giftcard-applied-row {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<wpml-config>
+	<admin-texts>
+		<key name="tokolariso_giftcards_settings">
+			<key name="email_subject" />
+			<key name="email_heading" />
+			<key name="email_intro" />
+			<key name="email_button_label" />
+			<key name="email_shop_url" />
+		</key>
+	</admin-texts>
+</wpml-config>

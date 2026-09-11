@@ -1,0 +1,320 @@
+# Copyright (C) 2026 Toko Lariso
+# This file is distributed under the same license as the Toko Lariso Giftcards plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Toko Lariso Giftcards 0.1.21\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-10 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: toko-lariso-giftcards\n"
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Toko Lariso Cadeaubon"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Selected giftcard design"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Surprise friends, colleagues, or family with a Toko Lariso giftcard."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Choose a picture"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Recipient information"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php includes/class-toko-lariso-giftcards-pdf.php
+msgid "Receiver name"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Receiver email"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php includes/class-toko-lariso-giftcards-pdf.php
+msgid "Greeting/message"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "characters"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php includes/class-toko-lariso-giftcards-pdf.php
+msgid "Sender name"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Giftcard amounts are configured in WooCommerce > Toko Lariso Giftcards. This product is sold as a non-virtual, non-taxable multi-purpose voucher with zero-cost giftcard delivery."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+#, php-format
+msgid "From %s"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Choose an amount"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "No giftcard amounts are configured yet. Please contact the store."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Add giftcard to cart"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-product-type.php
+msgid "Choose giftcard"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-cart.php
+msgid "Sender"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-cart.php
+msgid "Please enter a valid giftcard amount to use, or leave the amount empty."
+msgstr ""
+
+#: assets/js/blocks.js
+msgid "Amount to use (optional)"
+msgstr ""
+
+#: assets/js/blocks.js
+msgid "Maximum giftcard amount to use"
+msgstr ""
+
+#: assets/js/blocks.js
+msgid "Maximum used:"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-cart.php
+msgid "Please add giftcards one at a time so each giftcard can have its own recipient and message."
+msgstr ""
+
+#: assets/js/blocks.js includes/class-toko-lariso-giftcards-blocks-integration.php
+msgid "Giftcard partial payment"
+msgstr ""
+
+#: assets/js/blocks.js
+msgid "Paid with giftcard:"
+msgstr ""
+
+#: assets/js/blocks.js
+msgid "Amount to pay with selected payment method:"
+msgstr ""
+
+#: assets/js/blocks.js
+msgid "Place order and pay"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-order.php
+#, php-format
+msgid "Giftcard partial payment prepared: %1$s. Order total before giftcard payment: %2$s. Remaining amount charged by payment method: %3$s. Giftcard balance will be redeemed only after successful payment."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-order.php
+#, php-format
+msgid "Giftcard partial payment redeemed after successful payment: %1$s. Order total before giftcard: %2$s. Paid with giftcard: %3$s. Charged by payment method: %4$s."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-order.php
+msgid "Order total before giftcard:"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-order.php
+msgid "Giftcard partial payment:"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-order.php
+msgid "Giftcard status:"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-order.php
+msgid "Pending until payment succeeds"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-order.php
+msgid "Amount paid by selected payment method:"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+#, php-format
+msgid "Download PDF for %s"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+msgid "Giftcard PDFs"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+msgid "Giftcard PDF link is invalid or expired."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+msgid "You are not allowed to download this giftcard PDF."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+msgid "Giftcard PDFs are available after payment."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+msgid "Giftcard order item was not found."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+msgid "Giftcard was not found."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-pdf.php
+msgid "Valid until"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Giftcards"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Check giftcard balance"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Giftcard code"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Check balance"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Current balance"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Code"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Expiry date"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Status"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "No expiry date"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Spending history"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "No spending has been recorded for this giftcard yet."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Date"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Type"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Reference"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Amount"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Balance after"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Spent"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Refunded"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Adjusted"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Activity"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+#, php-format
+msgid "Order #%d"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Security check failed. Please try again."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Giftcard code was not found or cannot be checked."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Active"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Used"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Expired"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Blocked"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-my-account.php
+msgid "Unknown"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-admin.php
+msgid "Version"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-admin.php
+msgid "Full code"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-admin.php
+msgid "Admin-only full code for testing and manual recipient support. Keep this code private."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-admin.php
+msgid "Full code could not be decrypted."
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-admin.php
+msgid "Debug logging"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-admin.php
+msgid "Write giftcard checkout diagnostics to WooCommerce logs"
+msgstr ""
+
+#: includes/class-toko-lariso-giftcards-admin.php
+msgid "Use only while testing. Full giftcard codes are redacted; masked codes, order IDs, and amounts may be logged."
+msgstr ""
