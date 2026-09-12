@@ -84,6 +84,7 @@ class Toko_Lariso_Giftcards_Order {
 		add_action( 'woocommerce_order_refunded', array( $this, 'handle_partial_refund_note' ), 10, 2 );
 		add_filter( 'woocommerce_get_order_item_totals', array( $this, 'add_order_giftcard_totals' ), 20, 3 );
 		add_filter( 'woocommerce_order_get_total', array( $this, 'filter_order_total_for_giftcard_payment' ), 20, 2 );
+		$this->register_mollie_amount_filters();
 	}
 
 	/**
@@ -347,6 +348,11 @@ class Toko_Lariso_Giftcards_Order {
 			return $total;
 		}
 
+		if ( $this->should_clear_stale_checkout_payment_meta( $order ) ) {
+			$restored_total = $this->clear_stale_checkout_payment_meta( $order, 'order_total_filter' );
+			return $this->repository->normalize_amount( $restored_total > 0 ? $restored_total : $total );
+		}
+
 		$payment_due = $this->repository->normalize_amount( $payment_due );
 		$current     = $this->repository->normalize_amount( $total );
 		if ( abs( $current - $payment_due ) < 0.0001 ) {
@@ -364,6 +370,47 @@ class Toko_Lariso_Giftcards_Order {
 		);
 
 		return $payment_due;
+	}
+
+	/**
+	 * Forces Mollie API request data to use the same remaining amount shown on the checkout button.
+	 *
+	 * @param array<string,mixed> $args Mollie request args.
+	 * @param WC_Order            $order Order.
+	 * @return array<string,mixed>
+	 */
+	public function filter_mollie_payment_args( array $args, WC_Order $order ): array {
+		$payment_due = $this->get_order_payment_due_for_gateway( $order );
+		if ( null === $payment_due ) {
+			Toko_Lariso_Giftcards_Debug::log(
+				'mollie_args_amount_skipped',
+				array(
+					'order_id'       => $order->get_id(),
+					'payment_method' => $order->get_payment_method(),
+					'amount'         => $args['amount'] ?? null,
+				),
+				'warning'
+			);
+			return $args;
+		}
+
+		$previous_amount = $args['amount']['value'] ?? null;
+		$args['amount']  = is_array( $args['amount'] ?? null ) ? $args['amount'] : array();
+		$args['amount']['currency'] = (string) ( $args['amount']['currency'] ?? $order->get_currency() );
+		$args['amount']['value']    = number_format( $payment_due, 2, '.', '' );
+
+		Toko_Lariso_Giftcards_Debug::log(
+			'mollie_args_amount_forced',
+			array(
+				'order_id'        => $order->get_id(),
+				'payment_method'  => $order->get_payment_method(),
+				'previous_amount' => $previous_amount,
+				'forced_amount'   => $args['amount']['value'],
+				'button_amount'   => $payment_due,
+			)
+		);
+
+		return $args;
 	}
 
 	/**
@@ -398,15 +445,32 @@ class Toko_Lariso_Giftcards_Order {
 			return;
 		}
 
-		$original_total = $this->order_total_before_giftcards( $order );
+		$allocations             = $this->cart->get_allocations();
+		$prepared_original_total = (float) $order->get_meta( self::ORDER_ORIGINAL_TOTAL_META, true );
+		$original_total          = 'yes' === $order->get_meta( self::ORDER_PREPARED_META, true ) && $prepared_original_total > 0
+			? $this->repository->normalize_amount( $prepared_original_total )
+			: $this->order_total_before_giftcards( $order, (bool) $allocations );
 		if ( $original_total <= 0 ) {
 			Toko_Lariso_Giftcards_Debug::log( 'prepare_order_skipped_zero_original_total', array( 'order_id' => $order->get_id(), 'source_hook' => $source_hook ) );
 			return;
 		}
 
+		if ( 'yes' === $order->get_meta( self::ORDER_PREPARED_META, true ) && $this->should_clear_stale_checkout_payment_meta( $order ) ) {
+			$this->clear_stale_checkout_payment_meta( $order, $source_hook );
+			Toko_Lariso_Giftcards_Debug::log(
+				'prepare_order_cleared_stale_payment_meta',
+				array(
+					'order_id'       => $order->get_id(),
+					'source_hook'    => $source_hook,
+					'original_total' => $original_total,
+					'order'          => Toko_Lariso_Giftcards_Debug::order_context( $order ),
+				)
+			);
+			return;
+		}
+
 		if ( 'yes' === $order->get_meta( self::ORDER_PREPARED_META, true ) ) {
-			$prepared_original_total = (float) $order->get_meta( self::ORDER_ORIGINAL_TOTAL_META, true );
-			$payment_due             = $order->get_meta( self::ORDER_PAYMENT_DUE_META, true );
+			$payment_due = $order->get_meta( self::ORDER_PAYMENT_DUE_META, true );
 
 			if ( '' !== $payment_due && abs( $prepared_original_total - $original_total ) < 0.0001 ) {
 				$payment_due = $this->repository->normalize_amount( $payment_due );
@@ -426,8 +490,8 @@ class Toko_Lariso_Giftcards_Order {
 				);
 
 				if ( $finalize_checkout ) {
-					$this->cart->clear_session();
 					if ( 0.0 === $payment_due ) {
+						$this->cart->clear_session();
 						$this->redeem_prepared_order( $order );
 					}
 				}
@@ -456,6 +520,7 @@ class Toko_Lariso_Giftcards_Order {
 					'source_hook'     => $source_hook,
 					'original_total'  => $original_total,
 					'applied_session' => $this->cart->get_applied_cards(),
+					'allocations'     => $this->cart->get_allocations(),
 				)
 			);
 			return;
@@ -501,8 +566,8 @@ class Toko_Lariso_Giftcards_Order {
 		);
 
 		if ( $finalize_checkout ) {
-			$this->cart->clear_session();
 			if ( 0.0 === $payment_due ) {
+				$this->cart->clear_session();
 				$this->redeem_prepared_order( $order );
 			}
 		}
@@ -520,6 +585,69 @@ class Toko_Lariso_Giftcards_Order {
 		$order->delete_meta_data( self::ORDER_ORIGINAL_TOTAL_META );
 		$order->delete_meta_data( self::ORDER_GIFTCARD_PAYMENT_META );
 		$order->delete_meta_data( self::ORDER_PAYMENT_DUE_META );
+	}
+
+	/**
+	 * Returns whether stored giftcard payment meta no longer matches the current checkout cart.
+	 *
+	 * @param WC_Order $order Order.
+	 * @return bool
+	 */
+	private function should_clear_stale_checkout_payment_meta( WC_Order $order ): bool {
+		if ( is_admin() && ! wp_doing_ajax() ) {
+			return false;
+		}
+
+		if ( ! function_exists( 'WC' ) || ! WC()->cart || WC()->cart->is_empty() ) {
+			return false;
+		}
+
+		if ( $this->cart->get_allocations() ) {
+			return false;
+		}
+
+		if ( $this->cart->get_applied_cards() ) {
+			return true;
+		}
+
+		return 'yes' === $order->get_meta( self::ORDER_PREPARED_META, true )
+			|| (float) $order->get_meta( self::ORDER_GIFTCARD_PAYMENT_META, true ) > 0
+			|| '' !== $order->get_meta( self::ORDER_PAYMENT_DUE_META, true );
+	}
+
+	/**
+	 * Clears stale checkout giftcard payment meta and restores the order total.
+	 *
+	 * @param WC_Order $order Order.
+	 * @param string   $source Source label.
+	 * @return float Restored total.
+	 */
+	private function clear_stale_checkout_payment_meta( WC_Order $order, string $source ): float {
+		$restored_total = $this->order_total_before_giftcards( $order, false );
+		$old_meta       = array(
+			'original_total'   => $order->get_meta( self::ORDER_ORIGINAL_TOTAL_META, true ),
+			'giftcard_payment' => $order->get_meta( self::ORDER_GIFTCARD_PAYMENT_META, true ),
+			'payment_due'      => $order->get_meta( self::ORDER_PAYMENT_DUE_META, true ),
+		);
+
+		$this->clear_prepared_payment_meta( $order );
+		if ( $restored_total > 0 ) {
+			$order->set_total( $restored_total );
+		}
+		$order->save();
+
+		Toko_Lariso_Giftcards_Debug::log(
+			'stale_checkout_payment_meta_cleared',
+			array(
+				'order_id'       => $order->get_id(),
+				'source'         => $source,
+				'restored_total' => $restored_total,
+				'old_meta'       => $old_meta,
+				'order'          => Toko_Lariso_Giftcards_Debug::order_context( $order ),
+			)
+		);
+
+		return $restored_total;
 	}
 
 	/**
@@ -665,22 +793,124 @@ class Toko_Lariso_Giftcards_Order {
 	 * @param WC_Order $order Order.
 	 * @return float
 	 */
-	private function order_total_before_giftcards( WC_Order $order ): float {
-		$total = 0.0;
+	private function order_total_before_giftcards( WC_Order $order, bool $prefer_cart_total = false ): float {
+		$component_total = 0.0;
 
 		foreach ( $order->get_items( 'line_item' ) as $item ) {
-			$total += (float) $item->get_total() + (float) $item->get_total_tax();
+			$component_total += (float) $item->get_total() + (float) $item->get_total_tax();
 		}
 
 		foreach ( $order->get_items( 'shipping' ) as $item ) {
-			$total += (float) $item->get_total() + (float) $item->get_total_tax();
+			$component_total += (float) $item->get_total() + (float) $item->get_total_tax();
 		}
 
 		foreach ( $order->get_items( 'fee' ) as $item ) {
-			$total += (float) $item->get_total() + (float) $item->get_total_tax();
+			$component_total += (float) $item->get_total() + (float) $item->get_total_tax();
 		}
 
-		return $this->repository->normalize_amount( max( 0.0, $total ) );
+		$order_total     = $this->repository->normalize_amount( max( 0.0, (float) $order->get_total( 'edit' ) ) );
+		$cart_total      = $prefer_cart_total ? $this->current_cart_total() : 0.0;
+		$component_total = $this->repository->normalize_amount( max( 0.0, $component_total ) );
+		$selected_total  = max( $order_total, $component_total, $cart_total );
+
+		if ( abs( $selected_total - $component_total ) >= 0.01 || ( $order_total > 0 && abs( $selected_total - $order_total ) >= 0.01 ) ) {
+			Toko_Lariso_Giftcards_Debug::log(
+				'order_total_before_giftcards_mismatch',
+				array(
+					'order_id'        => $order->get_id(),
+					'order_total'     => $order_total,
+					'component_total' => $component_total,
+					'cart_total'      => $cart_total,
+					'selected_total'  => $selected_total,
+				)
+			);
+		}
+
+		return $this->repository->normalize_amount( $selected_total );
+	}
+
+	/**
+	 * Reads the current cart total including VAT when checkout allocations are active.
+	 *
+	 * @return float
+	 */
+	private function current_cart_total(): float {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return 0.0;
+		}
+
+		return $this->repository->normalize_amount( max( 0.0, (float) WC()->cart->get_total( 'edit' ) ) );
+	}
+
+	/**
+	 * Registers Mollie request filters for the gateway ids used by Mollie Payments for WooCommerce.
+	 *
+	 * @return void
+	 */
+	private function register_mollie_amount_filters(): void {
+		$methods = array(
+			'ideal',
+			'creditcard',
+			'paypal',
+			'bancontact',
+			'banktransfer',
+			'belfius',
+			'kbc',
+			'paysafecard',
+			'giftcard',
+			'in3',
+			'klarna',
+			'klarnapaylater',
+			'klarnasliceit',
+			'klarnapaynow',
+			'mybank',
+			'sofort',
+			'eps',
+			'giropay',
+			'applepay',
+			'voucher',
+			'paybybank',
+			'trustly',
+			'twint',
+			'blik',
+			'alma',
+			'billie',
+			'satispay',
+			'swish',
+			'mobilepay',
+			'mbway',
+			'przelewy24',
+			'wero',
+		);
+
+		foreach ( $methods as $method ) {
+			$gateway_id = 'mollie_wc_gateway_' . $method;
+			add_filter( 'woocommerce_' . $gateway_id . '_args', array( $this, 'filter_mollie_payment_args' ), 20, 2 );
+			add_filter( 'woocommerce_' . $gateway_id . 'payment_args', array( $this, 'filter_mollie_payment_args' ), 20, 2 );
+		}
+	}
+
+	/**
+	 * Gets the amount Mollie should charge, preparing the order as a fallback if needed.
+	 *
+	 * @param WC_Order $order Order.
+	 * @return float|null
+	 */
+	private function get_order_payment_due_for_gateway( WC_Order $order ): ?float {
+		$giftcard_payment = (float) $order->get_meta( self::ORDER_GIFTCARD_PAYMENT_META, true );
+		$payment_due      = $order->get_meta( self::ORDER_PAYMENT_DUE_META, true );
+
+		if ( $giftcard_payment <= 0 || '' === $payment_due ) {
+			$this->prepare_order_for_payment( $order, 'mollie_args_fallback_prepare', false );
+			$giftcard_payment = (float) $order->get_meta( self::ORDER_GIFTCARD_PAYMENT_META, true );
+			$payment_due      = $order->get_meta( self::ORDER_PAYMENT_DUE_META, true );
+		}
+
+		if ( $giftcard_payment <= 0 || '' === $payment_due ) {
+			return null;
+		}
+
+		return $this->repository->normalize_amount( $payment_due );
 	}
 
 	/**

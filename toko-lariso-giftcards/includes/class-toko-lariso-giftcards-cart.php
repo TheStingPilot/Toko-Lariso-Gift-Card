@@ -436,7 +436,16 @@ class Toko_Lariso_Giftcards_Cart {
 			return array();
 		}
 
-		return $this->calculate_allocations_for_amount( $this->get_applied_cards(), $amount );
+		$allocations = $this->get_allocations();
+		if ( ! $allocations ) {
+			if ( $this->get_applied_cards() ) {
+				Toko_Lariso_Giftcards_Debug::log( 'cart_order_allocations_ignored_stale_applied_cards' );
+			}
+			$this->clear_session();
+			return array();
+		}
+
+		return $this->calculate_allocations_for_amount( $allocations, $amount );
 	}
 
 	/**
@@ -677,23 +686,14 @@ class Toko_Lariso_Giftcards_Cart {
 			return;
 		}
 
-		$allocations = $this->calculate_allocations_for_amount( $applied, $this->cart_total_including_tax( $cart ) );
+		$cart_total  = $this->cart_total_including_tax( $cart );
+		$allocations = $this->calculate_allocations_for_amount( $applied, $cart_total );
 
-		$this->set_applied_cards(
-			array_map(
-				static fn( array $allocation ): array => array(
-					'id'         => (int) $allocation['id'],
-					'code_mask'  => (string) $allocation['code_mask'],
-					'max_amount' => (float) ( $allocation['max_amount'] ?? 0 ),
-				),
-				$allocations
-			)
-		);
-		$this->set_allocations( $allocations );
+		$this->store_allocations_for_cart( $allocations );
 		Toko_Lariso_Giftcards_Debug::log(
 			'cart_allocations_refreshed',
 			array(
-				'cart_total'   => $this->cart_total_including_tax( $cart ),
+				'cart_total'   => $cart_total,
 				'allocations'  => $allocations,
 				'applied_card' => $this->get_applied_cards(),
 			)
@@ -793,6 +793,26 @@ class Toko_Lariso_Giftcards_Cart {
 	 */
 	private function cart_total_including_tax( WC_Cart $cart ): float {
 		return $this->repository->normalize_amount( max( 0.0, (float) $cart->get_total( 'edit' ) ) );
+	}
+
+	/**
+	 * Stores calculated allocations and keeps the applied session list canonical.
+	 *
+	 * @param array<int,array<string,mixed>> $allocations Allocations.
+	 * @return void
+	 */
+	private function store_allocations_for_cart( array $allocations ): void {
+		$this->set_applied_cards(
+			array_map(
+				static fn( array $allocation ): array => array(
+					'id'         => (int) $allocation['id'],
+					'code_mask'  => (string) $allocation['code_mask'],
+					'max_amount' => (float) ( $allocation['max_amount'] ?? 0 ),
+				),
+				$allocations
+			)
+		);
+		$this->set_allocations( $allocations );
 	}
 
 	/**

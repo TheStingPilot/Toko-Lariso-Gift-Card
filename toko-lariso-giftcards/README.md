@@ -18,7 +18,7 @@ Text domain: `toko-lariso-giftcards`.
 
 ## Installation
 
-1. Upload `toko-lariso-giftcards-0.1.34.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
+1. Upload `toko-lariso-giftcards-0.2.00.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
 2. Activate `Toko Lariso Giftcards`.
 3. Go to WooCommerce > Toko Lariso Giftcards > Settings.
 4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, PDF settings, refund behavior, and uninstall behavior.
@@ -94,15 +94,17 @@ Giftcards cannot be used to buy giftcards. When the cart contains a giftcard pro
 
 At checkout, the plugin prepares the giftcard as a pending partial payment and changes the payable WooCommerce order total to the remaining amount. That remaining amount is what payment gateways such as Mollie should receive. The giftcard balance is not deducted at this point.
 
+For Mollie gateways, the plugin also filters the final Mollie API request arguments and forces `amount.value` to the stored remaining payment amount. This amount is the same amount shown on the Checkout Blocks place-order button.
+
 The actual giftcard ledger redemption runs only after successful payment, or immediately for a fully giftcard-covered zero-payment order. If a customer starts an external payment and cancels or fails it, the order keeps the pending giftcard payment metadata but the giftcard balance remains untouched.
 
 Public Store API responses expose only masked codes, not full codes.
 
-Giftcard redemption is deliberately treated as a partial payment, not as a discount line. The plugin does not use a WooCommerce coupon, does not add a negative cart fee, and does not change the WooCommerce cart total used by VAT displays. For example, goods of `EUR 44.45` including VAT plus shipping of `EUR 6.95` including VAT remain a VAT/cart total of `EUR 51.40`; the checkout giftcard section then shows `EUR 50.00` paid by giftcard and `EUR 1.40` to pay with the selected payment method.
+Giftcard redemption is treated as a partial payment, not as a cart discount. The plugin stores the selected giftcard allocation in the customer session and keeps WooCommerce cart, shipping, and VAT totals intact. During order creation the selected payment method receives only the remaining amount to charge.
 
-The Checkout Block place-order button is updated to show the remaining payment-method amount, including `EUR 0.00` when the giftcard covers the full order.
+For example, goods of `EUR 4.00` plus shipping of `EUR 6.95` with `EUR 10.00` paid by giftcard produce a remaining payable amount of `EUR 0.95`. The checkout giftcard section still shows the giftcard payment details, while the standard WooCommerce place-order button and payment method receive the remaining WooCommerce total.
 
-The button-label fallback only rewrites the Checkout Block's label text node. It avoids replacing the whole button contents, which prevents CSS text from being copied into the visible button label on themes/plugins that inject generated checkout button content.
+The Checkout Block place-order button is visually overlaid with the remaining payment-method amount from Store API extension data. The overlay keeps the existing/template button text and appends the remaining amount. If the base text is not yet available, it falls back to `Bestellen en betalen`. The overlay does not edit React-managed button text nodes, which avoids the earlier checkout block `insertBefore` error.
 
 ## Debug Logging
 
@@ -112,10 +114,16 @@ Useful events:
 
 - `store_api_cart_update_apply_success`
 - `store_api_cart_data`
+- `cart_order_allocations_ignored_stale_applied_cards`
+- `stale_checkout_payment_meta_cleared`
+- `prepare_order_cleared_stale_payment_meta`
 - `prepare_order_start`
 - `prepare_order_saved`
 - `prepare_order_reapplied_prepared_total`
+- `order_total_before_giftcards_mismatch`
 - `order_total_filter_applied`
+- `mollie_args_amount_forced`
+- `mollie_args_amount_skipped`
 - `redeem_prepared_start`
 - `redeem_prepared_saved`
 - `redeem_prepared_failed`
@@ -186,6 +194,15 @@ Run all plugin PHP lint checks:
 ```sh
 php tests/lint-all.php
 ```
+
+Replay giftcard remainder calculations:
+
+```sh
+php tests/calculate-remainder.php --subtotal=10.95 --voucher=10 --expected=0.95
+php tests/calculate-remainder.php --subtotal=10,95 --voucher=10,00 --expected=0,95
+```
+
+The script treats `subtotal` as the cart/order amount including VAT and shipping before giftcard payment, subtracts the voucher amount in cents, and prints the exact remaining amount that should be shown on the checkout button and sent to Mollie as `amount.value`.
 
 PowerShell alternative:
 

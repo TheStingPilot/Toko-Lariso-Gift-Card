@@ -73,6 +73,26 @@
 	font-size: 0.875em;
 }
 
+.tokolariso-giftcard-place-order-button {
+	position: relative;
+}
+
+.tokolariso-giftcard-place-order-button > * {
+	visibility: hidden;
+}
+
+.tokolariso-giftcard-place-order-button::after {
+	align-items: center;
+	content: attr(data-tokolariso-label);
+	display: flex;
+	inset: 0;
+	justify-content: center;
+	pointer-events: none;
+	position: absolute;
+	text-align: center;
+	visibility: visible;
+}
+
 .tokolariso-giftcard-remaining,
 .tokolariso-giftcard-limit {
 	display: block;

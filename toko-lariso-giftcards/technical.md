@@ -48,7 +48,13 @@ Example:
 - Paid by giftcard: EUR 15.00
 - Remaining amount charged by payment method: EUR 26.90
 
-The cart and VAT calculation are deliberately left untouched. The plugin does not implement redemption as a WooCommerce coupon, does not add a negative cart fee, and does not use `woocommerce_calculated_total` to alter the Store API cart total. WooCommerce and any VAT-display plugin therefore continue to see the original tax-inclusive cart total. A cart of EUR 44.45 goods plus EUR 6.95 shipping remains EUR 51.40 in the VAT/cart summary; the giftcard section separately shows EUR 50.00 paid by giftcard and EUR 1.40 still due.
+The cart and VAT calculation are deliberately left untouched. The plugin does not implement redemption as a WooCommerce coupon, does not add a negative cart fee, and does not use `woocommerce_calculated_total` to alter the Store API cart total. WooCommerce and any VAT-display plugin therefore continue to see the original tax-inclusive cart total. A cart of EUR 4.00 goods plus EUR 6.95 shipping remains EUR 10.95 in the VAT/cart summary; the giftcard section separately shows EUR 10.00 paid by giftcard and EUR 0.95 still due.
+
+During order creation, the plugin stores the original order total, giftcard payment amount, and remaining payment-method amount as order meta. The order total is then set to the remaining amount so the selected payment gateway charges the correct remainder. Giftcard balance is redeemed only after successful payment.
+
+Mollie Payments for WooCommerce builds both Payments API and Orders API requests from `$order->get_total()`, then exposes per-gateway request filters such as `woocommerce_mollie_wc_gateway_ideal_args` and `woocommerce_mollie_wc_gateway_idealpayment_args`. The plugin registers these filters for the known Mollie gateway ids and forces `amount.value` to `_tokolariso_payment_due_after_giftcards`. This is the same numeric amount exposed to Checkout Blocks as `remaining_total` and shown on the place-order button.
+
+If Mollie reaches the filter before the order has been prepared, the filter runs `prepare_order_for_payment()` as a last-moment fallback. Successful enforcement logs `mollie_args_amount_forced`; if no giftcard payment metadata can be found, it logs `mollie_args_amount_skipped`.
 
 The shopper may optionally set a maximum giftcard amount to use when applying the code in Cart/Checkout Blocks. A zero or empty limit means "use as much as possible up to the giftcard balance and cart total"; a positive limit caps that giftcard allocation before the remaining payment-method amount is calculated. This is still a payment allocation only and does not alter WooCommerce line totals, shipping totals, VAT bases, or VAT display tables.
 
@@ -58,7 +64,7 @@ At order creation, the plugin prepares a pending giftcard partial payment and st
 
 The giftcard balance is not deducted during external payment redirection. A Mollie/iDEAL cancellation or failed payment therefore leaves the giftcard balance untouched. The ledger redemption runs after `woocommerce_payment_complete`, `processing`, or `completed`, or immediately for a zero-payment order fully covered by giftcard credit.
 
-Checkout Blocks can reuse and rebuild draft/pending orders. When that happens, WooCommerce may temporarily restore the order total from the cart. The plugin therefore prepares the partial payment at `woocommerce_store_api_checkout_update_order_meta` and re-applies the stored remaining amount again at `woocommerce_store_api_checkout_order_processed`. A final `woocommerce_order_get_total` guard returns the remaining payment-method amount when giftcard payment meta is present, so gateways read the payable amount instead of the original tax-inclusive order value.
+Checkout Blocks can reuse and rebuild draft/pending orders. When that happens, WooCommerce may temporarily restore the order total from the cart, or a reused draft order may still contain stale giftcard payment metadata from a previous checkout attempt. The plugin therefore prepares the partial payment at `woocommerce_store_api_checkout_update_order_meta` and re-applies the stored remaining amount again at `woocommerce_store_api_checkout_order_processed`. When active giftcard allocations exist, the current Cart Blocks total is treated as the authoritative original tax-inclusive total before giftcard payment. If no active allocations exist, stale giftcard payment metadata is cleared and the draft order total is restored before gateways read it. A final `woocommerce_order_get_total` guard returns the remaining payment-method amount when valid giftcard payment meta is present, so gateways read the payable amount instead of the original tax-inclusive order value.
 
 Fiscal assumptions must be reviewed by the merchant's accountant/bookkeeper. This code is a technical implementation of the requested treatment, not tax advice.
 
@@ -222,19 +228,20 @@ This prevents two concurrent successful checkout/payment requests from spending 
   - `wc.blocksCheckout.extensionCartUpdate({ namespace, data })`
 - The Apply payload accepts `max_amount`. Empty means no manual cap; a positive value caps that card's allocation so customers can choose to use only part of a larger giftcard balance.
 - The Blocks UI keeps a shared in-flight update guard around Apply/Remove, with listener synchronization across Checkout Blocks rerenders, so a rerendered checkout cannot submit duplicate giftcard updates before the previous Store API request finishes.
-- The Apply button intentionally does not use the generic `.wc-block-components-button` class. `wc-postcode-checker` 3.7.2 binds a broad document click handler to that selector and calls `preventDefault()`, which can intercept unrelated extension buttons. The giftcard Apply click also stops propagation so address/shipping observer scripts do not treat it as a checkout address/shipping action.
+- The Apply button uses the normal WooCommerce/WordPress button classes for theme styling. The click still stops propagation so broad document-level checkout handlers do not treat giftcard Apply as an address or shipping action.
 - UI slots:
   - `ExperimentalDiscountsMeta` for the input form.
   - `ExperimentalOrderMeta` for applied giftcard partial payment, when available, so the payment information appears closer to the order total. Older Blocks builds fall back to showing applied giftcard data inside `ExperimentalDiscountsMeta`.
-- Filter:
-  - `placeOrderButtonLabel`, showing the remaining payment-method amount when giftcard payment is applied.
-- Fallback UI sync:
-  - The frontend also watches the Checkout Block submit button and rewrites only the inner button label node to the remaining payment-method amount when a Blocks build or theme does not pass extension data into `placeOrderButtonLabel`. This fallback does not modify cart totals, order totals, VAT lines, Store API totals, or generated CSS content around the button.
+- Button label sync:
+  - `placeOrderButtonLabel` is left on the default label because WooCommerce Blocks appends its own order total to that label.
+  - When giftcard payment is applied, the frontend stores the remaining payment-method amount from Store API extension data, adds a managed data attribute/class to the place-order button, and shows a CSS overlay with the remaining amount. This keeps React-managed text nodes intact and prevents duplicate labels such as `€ 0,95 · € 10,95`.
+  - The overlay does not modify cart totals, order totals, VAT lines, Store API totals, or the submitted checkout payload.
 
 ### Orders
 
 - `woocommerce_store_api_checkout_order_processed`
 - `woocommerce_store_api_checkout_update_order_meta`
+- `woocommerce_mollie_wc_gateway_*_args` and `woocommerce_mollie_wc_gateway_*payment_args`
 - `woocommerce_checkout_order_processed`
 - `woocommerce_payment_complete`
 - `woocommerce_order_status_processing`

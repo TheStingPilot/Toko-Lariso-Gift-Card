@@ -26,6 +26,8 @@
 	var namespace = 'tokolariso-giftcards';
 	var pendingUpdate = false;
 	var pendingListeners = [];
+	var latestExtensionData = {};
+	var latestPlaceOrderDefaultLabel = '';
 
 	function setPendingUpdate( value ) {
 		pendingUpdate = value;
@@ -51,70 +53,119 @@
 		return cartData.extensions[ namespace ] || {};
 	}
 
-	function getCheckoutFilterData( extensions, args ) {
-		if ( extensions && extensions[ namespace ] ) {
-			return extensions[ namespace ];
-		}
-		if ( args && args.cart && args.cart.extensions && args.cart.extensions[ namespace ] ) {
-			return args.cart.extensions[ namespace ];
-		}
-		return {};
+	function hasGiftcardExtensionShape( data ) {
+		return (
+			data &&
+			typeof data === 'object' &&
+			(
+				Array.isArray( data.applied ) ||
+				Object.prototype.hasOwnProperty.call( data, 'total_applied' ) ||
+				Object.prototype.hasOwnProperty.call( data, 'remaining_total_formatted' ) ||
+				Object.prototype.hasOwnProperty.call( data, 'can_apply' )
+			)
+		);
 	}
 
-	function getPlaceOrderLabel( data ) {
+	function rememberExtensionData( data ) {
+		if ( hasGiftcardExtensionShape( data ) ) {
+			latestExtensionData = data;
+		}
+		return data || {};
+	}
+
+	function getCurrentCartExtensionData() {
+		if ( ! wp.data || ! wp.data.select ) {
+			return {};
+		}
+
+		var selectedCartStore = wp.data.select( cartStore );
+		if ( ! selectedCartStore || ! selectedCartStore.getCartData ) {
+			return {};
+		}
+
+		return getExtensionData( selectedCartStore.getCartData() );
+	}
+
+	function getCheckoutFilterData( extensions, args ) {
+		if ( extensions && extensions[ namespace ] ) {
+			return rememberExtensionData( extensions[ namespace ] );
+		}
+		if ( args && args.cart && args.cart.extensions && args.cart.extensions[ namespace ] ) {
+			return rememberExtensionData( args.cart.extensions[ namespace ] );
+		}
+
+		var currentCartExtensionData = getCurrentCartExtensionData();
+		if ( hasGiftcardExtensionShape( currentCartExtensionData ) ) {
+			return rememberExtensionData( currentCartExtensionData );
+		}
+
+		return latestExtensionData;
+	}
+
+	function getPlaceOrderLabel( data, defaultLabel ) {
 		if ( data && data.total_applied > 0 && data.remaining_total_formatted ) {
-			return __( 'Place order and pay', 'toko-lariso-giftcards' ) + ' · ' + data.remaining_total_formatted;
+			return ( defaultLabel || latestPlaceOrderDefaultLabel || __( 'Bestellen en betalen', 'toko-lariso-giftcards' ) ) + ' · ' + data.remaining_total_formatted;
 		}
 		return '';
 	}
 
-	function getPlaceOrderLabelNode( button ) {
-		return button.querySelector(
-			'.wc-block-components-checkout-place-order-button__text, .wc-block-components-button__text'
+	function getPlaceOrderButtons() {
+		return document.querySelectorAll(
+			'.wc-block-components-checkout-place-order-button, .wc-block-checkout__actions_row button[type="submit"], .wc-block-checkout__actions button[type="submit"]'
 		);
 	}
 
-	function syncPlaceOrderButtonLabel( data ) {
+	function setPlaceOrderButtonOverlayLabel( button, label ) {
+		if ( ! button ) {
+			return;
+		}
+
+		if ( ! latestPlaceOrderDefaultLabel && button.textContent ) {
+			latestPlaceOrderDefaultLabel = button.textContent.replace( /\s+/g, ' ' ).trim().replace( /\s+[·-]\s+€\s?[\d.,]+$/, '' );
+		}
+
+		if ( label ) {
+			if ( ! button.dataset.tokolarisoAriaManaged ) {
+				button.dataset.tokolarisoOriginalAria = button.getAttribute( 'aria-label' ) || '';
+			}
+
+			button.classList.add( 'tokolariso-giftcard-place-order-button' );
+			button.dataset.tokolarisoLabel = label;
+			button.dataset.tokolarisoAriaManaged = '1';
+			button.setAttribute( 'aria-label', label );
+			return;
+		}
+
+		if ( button.dataset.tokolarisoAriaManaged ) {
+			if ( button.dataset.tokolarisoOriginalAria ) {
+				button.setAttribute( 'aria-label', button.dataset.tokolarisoOriginalAria );
+			} else {
+				button.removeAttribute( 'aria-label' );
+			}
+		}
+
+		button.classList.remove( 'tokolariso-giftcard-place-order-button' );
+		delete button.dataset.tokolarisoLabel;
+		delete button.dataset.tokolarisoAriaManaged;
+		delete button.dataset.tokolarisoOriginalAria;
+	}
+
+	function syncPlaceOrderButtonOverlay( data ) {
 		var label = getPlaceOrderLabel( data );
-		var buttons = document.querySelectorAll(
-			'.wc-block-components-checkout-place-order-button, .wc-block-checkout__actions_row button[type="submit"], .wc-block-checkout__actions button[type="submit"]'
-		);
-
-		buttons.forEach( function ( button ) {
-			var labelNode = getPlaceOrderLabelNode( button );
-
-			if ( ! labelNode ) {
-				return;
-			}
-
-			if ( label ) {
-				if ( ! labelNode.dataset.tokolarisoOriginalLabel ) {
-					labelNode.dataset.tokolarisoOriginalLabel = labelNode.textContent;
-				}
-				if ( labelNode.textContent !== label ) {
-					labelNode.textContent = label;
-				}
-				button.setAttribute( 'aria-label', label );
-				return;
-			}
-
-			if ( labelNode.dataset.tokolarisoOriginalLabel ) {
-				if ( labelNode.textContent !== labelNode.dataset.tokolarisoOriginalLabel ) {
-					labelNode.textContent = labelNode.dataset.tokolarisoOriginalLabel;
-				}
-				button.setAttribute( 'aria-label', labelNode.dataset.tokolarisoOriginalLabel );
-				delete labelNode.dataset.tokolarisoOriginalLabel;
-			}
+		getPlaceOrderButtons().forEach( function ( button ) {
+			setPlaceOrderButtonOverlayLabel( button, label );
 		} );
 	}
 
 	function useGiftcardExtensionData() {
-		return getExtensionData(
-			useSelect(
-				function ( select ) {
-					return select( cartStore ).getCartData();
-				},
-				[]
+		return rememberExtensionData(
+			getExtensionData(
+				useSelect(
+					function ( select ) {
+						return select( cartStore ).getCartData();
+					},
+					[]
+				)
 			)
 		);
 	}
@@ -322,14 +373,14 @@
 		);
 	}
 
-	function GiftcardCheckoutButtonSync() {
+	function GiftcardCheckoutButtonOverlaySync() {
 		var extensionData = useGiftcardExtensionData();
 
 		useEffect(
 			function () {
 				var observer;
 				var run = function () {
-					syncPlaceOrderButtonLabel( extensionData );
+					syncPlaceOrderButtonOverlay( extensionData );
 				};
 
 				run();
@@ -426,7 +477,7 @@
 				null,
 				createElement( ExperimentalDiscountsMeta, null, createElement( GiftcardPanel ) ),
 				ExperimentalOrderMeta ? createElement( ExperimentalOrderMeta, null, createElement( GiftcardOrderSummary ) ) : null,
-				createElement( GiftcardCheckoutButtonSync )
+				createElement( GiftcardCheckoutButtonOverlaySync )
 			);
 		},
 		scope: 'woocommerce-checkout',
@@ -435,7 +486,11 @@
 	if ( registerCheckoutFilters ) {
 		registerCheckoutFilters( namespace, {
 			placeOrderButtonLabel: function ( defaultValue, extensions, args ) {
-				return getPlaceOrderLabel( getCheckoutFilterData( extensions, args ) ) || defaultValue;
+				latestPlaceOrderDefaultLabel = defaultValue || latestPlaceOrderDefaultLabel;
+				window.setTimeout( function () {
+					syncPlaceOrderButtonOverlay( getCheckoutFilterData( extensions, args ) );
+				}, 0 );
+				return defaultValue;
 			},
 		} );
 	}
