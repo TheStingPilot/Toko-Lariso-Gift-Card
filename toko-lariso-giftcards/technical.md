@@ -124,7 +124,7 @@ PDF settings are stored with the normal plugin settings:
 
 The QR code is generated locally as vector rectangles inside the PDF. It uses a fixed Version 6-L byte-mode matrix, which is sufficient for the configured redeem URL plus a Toko Lariso giftcard code. If the URL becomes too long for that matrix, the PDF still shows the readable webshop URL and debug logging records `pdf_qr_payload_too_long`.
 
-The visible PDF webshop URL includes the `tokolariso_giftcard` query parameter, matching the full automatic QR payload, and is wrapped narrowly to stay clear of the QR block. When that URL is opened with an empty cart, the full code is stored temporarily in WooCommerce session and the HttpOnly `tokolariso_giftcard_pending` cookie for 14 days during `wp_loaded`, before the later cart/checkout apply step. The code is validated server-side before storage, retried after WooCommerce loads the cart from session and after add-to-cart, and cleared after a successful application or a definitive invalid-code failure.
+The visible PDF webshop URL includes the `https://` URL, the `tokolariso_giftcard` query parameter, and matches the full automatic QR payload. The URL/QR area is also a PDF URI annotation, so PDF readers that support links can open it directly. When that URL is opened with an empty cart, the full code is stored temporarily in WooCommerce session and the HttpOnly `tokolariso_giftcard_pending` cookie for 14 days during `wp_loaded`, before the later cart/checkout apply step. The code is validated server-side before storage, retried after WooCommerce loads the cart from session and after add-to-cart, and cleared after a successful application or a definitive invalid-code failure.
 
 ## Database Tables
 

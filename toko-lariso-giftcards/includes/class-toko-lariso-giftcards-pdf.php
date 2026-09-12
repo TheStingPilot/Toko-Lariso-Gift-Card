@@ -294,8 +294,9 @@ class Toko_Lariso_Giftcards_PDF {
 			}
 		}
 
-		$content_id = $this->add_pdf_object( $objects, $this->build_stream_object( $content ) );
-		$page_id    = $this->add_pdf_object( $objects, '<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ' . $page_w . ' ' . $page_h . '] /Resources ' . $resources . ' /Contents ' . $content_id . ' 0 R >>' );
+		$content_id    = $this->add_pdf_object( $objects, $this->build_stream_object( $content ) );
+		$annotation_id = $this->add_pdf_object( $objects, $this->build_link_annotation( $redeem_url, 456, 342, 805, 462, $page_h ) );
+		$page_id       = $this->add_pdf_object( $objects, '<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ' . $page_w . ' ' . $page_h . '] /Resources ' . $resources . ' /Annots [' . $annotation_id . ' 0 R] /Contents ' . $content_id . ' 0 R >>' );
 		$pages_id   = $this->add_pdf_object( $objects, '<< /Type /Pages /Kids [' . $page_id . ' 0 R] /Count 1 >>' );
 		$objects[ $page_id ] = str_replace( '/Parent 0 0 R', '/Parent ' . $pages_id . ' 0 R', $objects[ $page_id ] );
 		$catalog_id = $this->add_pdf_object( $objects, '<< /Type /Catalog /Pages ' . $pages_id . ' 0 R >>' );
@@ -374,8 +375,23 @@ class Toko_Lariso_Giftcards_PDF {
 	 * @return string
 	 */
 	private function display_url_for_pdf( string $url ): string {
-		$url = preg_replace( '#^https?://#i', '', $url );
-		return $url ? untrailingslashit( $url ) : '';
+		return untrailingslashit( $url );
+	}
+
+	/**
+	 * Builds a clickable PDF URI annotation.
+	 *
+	 * @param string $url URL.
+	 * @param float  $x1 Left.
+	 * @param float  $y1 Top.
+	 * @param float  $x2 Right.
+	 * @param float  $y2 Bottom.
+	 * @param float  $page_h Page height.
+	 * @return string
+	 */
+	private function build_link_annotation( string $url, float $x1, float $y1, float $x2, float $y2, float $page_h ): string {
+		$rect = sprintf( '[%.2F %.2F %.2F %.2F]', $x1, $page_h - $y2, $x2, $page_h - $y1 );
+		return '<< /Type /Annot /Subtype /Link /Rect ' . $rect . ' /Border [0 0 0] /A << /S /URI /URI (' . $this->escape_pdf_text( $url ) . ') >> >>';
 	}
 
 	/**

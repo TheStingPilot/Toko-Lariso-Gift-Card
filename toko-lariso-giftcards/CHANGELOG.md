@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.34
+
+- Reworked the Blocks checkout giftcard payment form so the code and amount fields each use 50% of the available width.
+- Moved the Apply button onto its own full-width row and removed hard-coded button colors so the active theme/WooCommerce button styling can control its appearance.
+
+## 0.1.33
+
+- Kept the full `https://` redeem URL visible in giftcard PDFs.
+- Added a PDF URI link annotation over the visible webshop link and QR area, so supported PDF readers can open the giftcard redeem URL directly.
+
 ## 0.1.32
 
 - Split giftcard redeem-link handling into early "remember code" and later "apply code" phases.

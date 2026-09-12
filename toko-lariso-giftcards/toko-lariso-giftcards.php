@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Toko Lariso Giftcards
  * Description: WooCommerce giftcards as multi-purpose voucher store credit with Cart and Checkout Blocks support.
- * Version: 0.1.32
+ * Version: 0.1.34
  * Author: Toko Lariso
  * Text Domain: toko-lariso-giftcards
  * Requires at least: 6.4
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'TOKO_LARISO_GIFTCARDS_VERSION', '0.1.32' );
+define( 'TOKO_LARISO_GIFTCARDS_VERSION', '0.1.34' );
 define( 'TOKO_LARISO_GIFTCARDS_FILE', __FILE__ );
 define( 'TOKO_LARISO_GIFTCARDS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'TOKO_LARISO_GIFTCARDS_URL', plugin_dir_url( __FILE__ ) );

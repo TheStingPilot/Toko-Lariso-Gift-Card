@@ -274,7 +274,7 @@
 					{
 						type: 'submit',
 						disabled: ! canApply || busy || pendingUpdate,
-						className: 'tokolariso-giftcard-apply wp-element-button',
+						className: 'tokolariso-giftcard-apply wc-block-components-button wp-element-button',
 						onClick: function ( event ) {
 							event.stopPropagation();
 						},
