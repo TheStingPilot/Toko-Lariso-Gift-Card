@@ -433,8 +433,20 @@ class Toko_Lariso_Giftcards_Order {
 		);
 
 		if ( 'yes' === $order->get_meta( self::ORDER_REDEEMED_META, true ) ) {
-			Toko_Lariso_Giftcards_Debug::log( 'prepare_order_skipped_already_redeemed', array( 'order_id' => $order->get_id(), 'source_hook' => $source_hook ) );
-			return;
+			if ( ! $this->cart->get_allocations() && ! $this->cart->get_applied_cards() ) {
+				Toko_Lariso_Giftcards_Debug::log( 'prepare_order_skipped_already_redeemed', array( 'order_id' => $order->get_id(), 'source_hook' => $source_hook ) );
+				return;
+			}
+
+			Toko_Lariso_Giftcards_Debug::log(
+				'prepare_order_reused_redeemed_checkout_order',
+				array(
+					'order_id'    => $order->get_id(),
+					'source_hook' => $source_hook,
+					'status'      => $order->get_status(),
+				),
+				'warning'
+			);
 		}
 
 		if ( $this->cart->cart_contains_giftcard_purchase() ) {
@@ -491,7 +503,6 @@ class Toko_Lariso_Giftcards_Order {
 
 				if ( $finalize_checkout ) {
 					if ( 0.0 === $payment_due ) {
-						$this->cart->clear_session();
 						$this->redeem_prepared_order( $order );
 					}
 				}
@@ -567,7 +578,6 @@ class Toko_Lariso_Giftcards_Order {
 
 		if ( $finalize_checkout ) {
 			if ( 0.0 === $payment_due ) {
-				$this->cart->clear_session();
 				$this->redeem_prepared_order( $order );
 			}
 		}
@@ -607,7 +617,7 @@ class Toko_Lariso_Giftcards_Order {
 		}
 
 		if ( $this->cart->get_applied_cards() ) {
-			return true;
+			return false;
 		}
 
 		return 'yes' === $order->get_meta( self::ORDER_PREPARED_META, true )

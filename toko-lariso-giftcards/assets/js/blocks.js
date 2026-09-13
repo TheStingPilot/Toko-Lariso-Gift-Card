@@ -102,9 +102,36 @@
 		return latestExtensionData;
 	}
 
+	function normalizePlaceOrderBaseLabel( label ) {
+		var normalized = ( label || '' ).replace( /\s+/g, ' ' ).trim().replace( /\s+[·-]\s+€\s?[\d.,]+$/, '' );
+		if ( ! normalized ) {
+			return '';
+		}
+
+		if ( /^plaats bestelling$/i.test( normalized ) || /^place order$/i.test( normalized ) ) {
+			return '';
+		}
+
+		return normalized;
+	}
+
+	function getConfiguredPlaceOrderBaseLabel() {
+		if ( window.wcTextOrderButton && typeof window.wcTextOrderButton.text === 'string' ) {
+			return normalizePlaceOrderBaseLabel( window.wcTextOrderButton.text );
+		}
+		return '';
+	}
+
+	function getPlaceOrderBaseLabel( defaultLabel ) {
+		return getConfiguredPlaceOrderBaseLabel() ||
+			normalizePlaceOrderBaseLabel( defaultLabel ) ||
+			normalizePlaceOrderBaseLabel( latestPlaceOrderDefaultLabel ) ||
+			__( 'Bestel en betaal', 'toko-lariso-giftcards' );
+	}
+
 	function getPlaceOrderLabel( data, defaultLabel ) {
 		if ( data && data.total_applied > 0 && data.remaining_total_formatted ) {
-			return ( defaultLabel || latestPlaceOrderDefaultLabel || __( 'Bestellen en betalen', 'toko-lariso-giftcards' ) ) + ' · ' + data.remaining_total_formatted;
+			return getPlaceOrderBaseLabel( defaultLabel ) + ' · ' + data.remaining_total_formatted;
 		}
 		return '';
 	}
@@ -121,7 +148,7 @@
 		}
 
 		if ( ! latestPlaceOrderDefaultLabel && button.textContent ) {
-			latestPlaceOrderDefaultLabel = button.textContent.replace( /\s+/g, ' ' ).trim().replace( /\s+[·-]\s+€\s?[\d.,]+$/, '' );
+			latestPlaceOrderDefaultLabel = normalizePlaceOrderBaseLabel( button.textContent );
 		}
 
 		if ( label ) {

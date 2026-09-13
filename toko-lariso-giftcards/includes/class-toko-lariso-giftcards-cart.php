@@ -181,11 +181,15 @@ class Toko_Lariso_Giftcards_Cart {
 
 		if ( $this->repository->is_expired_by_date( $card ) ) {
 			$this->repository->expire( (int) $card['id'] );
-			throw new InvalidArgumentException( __( 'Giftcard code was not found or cannot be used.', 'toko-lariso-giftcards' ) );
+			throw new InvalidArgumentException( $this->giftcard_expired_message() );
 		}
 
-		if ( 'active' !== $card['status'] || (float) $card['current_balance'] <= 0 ) {
-			throw new InvalidArgumentException( __( 'Giftcard code was not found or cannot be used.', 'toko-lariso-giftcards' ) );
+		if ( (float) $card['current_balance'] <= 0 ) {
+			throw new InvalidArgumentException( $this->giftcard_fully_used_message() );
+		}
+
+		if ( 'active' !== $card['status'] ) {
+			throw new InvalidArgumentException( __( 'Giftcard code cannot be used because this giftcard is not active.', 'toko-lariso-giftcards' ) );
 		}
 	}
 
@@ -305,10 +309,23 @@ class Toko_Lariso_Giftcards_Cart {
 		if ( $this->repository->is_expired_by_date( $card ) ) {
 			$this->repository->expire( (int) $card['id'] );
 			Toko_Lariso_Giftcards_Debug::log( 'cart_apply_code_expired', array( 'giftcard_id' => (int) $card['id'], 'code_mask' => (string) $card['code_mask'] ) );
-			throw new InvalidArgumentException( __( 'Giftcard code was not found or cannot be used.', 'toko-lariso-giftcards' ) );
+			throw new InvalidArgumentException( $this->giftcard_expired_message() );
 		}
 
-		if ( 'active' !== $card['status'] || (float) $card['current_balance'] <= 0 ) {
+		if ( (float) $card['current_balance'] <= 0 ) {
+			Toko_Lariso_Giftcards_Debug::log(
+				'cart_apply_code_fully_used',
+				array(
+					'giftcard_id'     => (int) $card['id'],
+					'code_mask'       => (string) $card['code_mask'],
+					'status'          => (string) $card['status'],
+					'current_balance' => (float) $card['current_balance'],
+				)
+			);
+			throw new InvalidArgumentException( $this->giftcard_fully_used_message() );
+		}
+
+		if ( 'active' !== $card['status'] ) {
 			Toko_Lariso_Giftcards_Debug::log(
 				'cart_apply_code_unusable',
 				array(
@@ -318,7 +335,7 @@ class Toko_Lariso_Giftcards_Cart {
 					'current_balance' => (float) $card['current_balance'],
 				)
 			);
-			throw new InvalidArgumentException( __( 'Giftcard code was not found or cannot be used.', 'toko-lariso-giftcards' ) );
+			throw new InvalidArgumentException( __( 'Giftcard code cannot be used because this giftcard is not active.', 'toko-lariso-giftcards' ) );
 		}
 
 		$max_amount = $this->normalize_redemption_limit( $max_amount );
@@ -438,8 +455,22 @@ class Toko_Lariso_Giftcards_Cart {
 
 		$allocations = $this->get_allocations();
 		if ( ! $allocations ) {
-			if ( $this->get_applied_cards() ) {
-				Toko_Lariso_Giftcards_Debug::log( 'cart_order_allocations_ignored_stale_applied_cards' );
+			$applied = $this->get_applied_cards();
+			if ( $applied ) {
+				$allocations = $this->calculate_allocations_for_amount( $applied, $amount );
+				if ( $allocations ) {
+					$this->store_allocations_for_cart( $allocations );
+					Toko_Lariso_Giftcards_Debug::log(
+						'cart_order_allocations_rebuilt_from_applied_cards',
+						array(
+							'amount'      => $amount,
+							'allocations' => $allocations,
+						)
+					);
+					return $allocations;
+				}
+
+				Toko_Lariso_Giftcards_Debug::log( 'cart_order_allocations_cleared_unusable_applied_cards' );
 			}
 			$this->clear_session();
 			return array();
@@ -966,6 +997,24 @@ class Toko_Lariso_Giftcards_Cart {
 	 */
 	public function giftcard_payment_blocked_message(): string {
 		return __( 'Giftcards cannot be used to buy another giftcard. Remove the giftcard product from your cart before applying a giftcard code.', 'toko-lariso-giftcards' );
+	}
+
+	/**
+	 * Customer-facing message when a giftcard has expired.
+	 *
+	 * @return string
+	 */
+	private function giftcard_expired_message(): string {
+		return __( 'This giftcard has been expired and can no longer be used.', 'toko-lariso-giftcards' );
+	}
+
+	/**
+	 * Customer-facing message when a giftcard has no remaining balance.
+	 *
+	 * @return string
+	 */
+	private function giftcard_fully_used_message(): string {
+		return __( 'The full balance of this giftcard has already been used.', 'toko-lariso-giftcards' );
 	}
 
 	/**

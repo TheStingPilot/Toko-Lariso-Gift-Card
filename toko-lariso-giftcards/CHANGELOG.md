@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.05
+
+- Improved customer-facing giftcard validation messages for expired cards and fully used cards.
+- Expired giftcards now explicitly say that the giftcard has been expired and can no longer be used.
+- Fully used giftcards now explain that the full balance has already been used.
+
+## 0.2.04
+
+- Added the activity time below each spending history date, formatted with WooCommerce's configured date and time formats.
+
+## 0.2.03
+
+- Updated the customer giftcard spending history table to follow WooCommerce theme table markup more closely.
+- Added responsive table `data-title` attributes and WooCommerce table classes for better theme/mobile behavior.
+- Kept activity amounts on one line and right-aligned amount columns with minimal CSS, leaving colors, borders, spacing, and typography to the active theme.
+
+## 0.2.02
+
+- Fixed Store API checkout retries that reuse a pending order which already has giftcard redeemed metadata from an earlier failed or interrupted checkout attempt.
+- Active checkout giftcard allocations now override the old redeemed-order guard during order preparation, so the current remaining amount can still be stored and forced into Mollie.
+- Added debug marker `prepare_order_reused_redeemed_checkout_order` for this recovery path.
+
+## 0.2.01
+
+- Fixed a zero-payment checkout race where a fully giftcard-covered order could be restored to the original payable amount before Mollie created its payment request.
+- Kept active giftcard session data available throughout checkout finalization so stale checkout cleanup no longer removes valid giftcard payment metadata too early.
+- Rebuild checkout order allocations from applied giftcards when WooCommerce still has the applied card but the allocation snapshot is temporarily missing.
+- Improved the Checkout Blocks button overlay so it prefers the configured/template button label and ignores WooCommerce's generic `Plaats bestelling`/`Place order` label as a base for giftcard remainder text.
+
 ## 0.2.00
 
 Baseline release. This version consolidates all functionality built and tested up to and including version 0.1.45.
@@ -18,7 +47,7 @@ Built so far:
 - Giftcard redemption is treated as a separate partial payment, not as a coupon, cart discount, taxable fee, or VAT reduction.
 - Product totals, shipping totals, and VAT tables remain based on the original WooCommerce cart/order amounts.
 - Checkout button and giftcard summary show the remaining payment-method amount after giftcard allocation.
-- Checkout button overlay avoids direct React text-node mutation and uses the current/template button text, with `Bestellen en betalen` as fallback.
+- Checkout button overlay avoids direct React text-node mutation and uses the current/template button text, with `Bestel en betaal` as fallback.
 - Giftcard balance is redeemed only after successful payment, or immediately for a fully giftcard-covered zero-payment order.
 - Cancelled or failed external payments leave giftcard balances untouched.
 - Mollie Payments for WooCommerce compatibility: final Mollie request amount is forced to the stored remaining payment-method amount.

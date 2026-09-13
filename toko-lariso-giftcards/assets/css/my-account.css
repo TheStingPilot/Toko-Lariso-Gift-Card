@@ -1,0 +1,15 @@
+.tokolariso-giftcard-activity .tokolariso-giftcard-amount-column,
+.tokolariso-giftcard-activity .tokolariso-giftcard-money-cell {
+	text-align: right;
+}
+
+.tokolariso-giftcard-activity .tokolariso-giftcard-money,
+.tokolariso-giftcard-activity .woocommerce-Price-amount {
+	white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+	.tokolariso-giftcard-activity .tokolariso-giftcard-money-cell {
+		text-align: right;
+	}
+}

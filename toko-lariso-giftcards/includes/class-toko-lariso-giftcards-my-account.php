@@ -38,10 +38,25 @@ class Toko_Lariso_Giftcards_My_Account {
 	public function init(): void {
 		add_action( 'init', array( $this, 'add_endpoint' ) );
 		add_action( 'wp_loaded', array( $this, 'maybe_flush_rewrite_rules' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_filter( 'query_vars', array( $this, 'add_query_vars' ) );
 		add_filter( 'woocommerce_account_menu_items', array( $this, 'add_menu_item' ) );
 		add_action( 'woocommerce_account_' . self::ENDPOINT . '_endpoint', array( $this, 'render_endpoint' ) );
 		add_shortcode( 'tokolariso_giftcard_balance', array( $this, 'render_shortcode' ) );
+	}
+
+	/**
+	 * Enqueues minimal customer-facing account styles.
+	 *
+	 * @return void
+	 */
+	public function enqueue_assets(): void {
+		wp_enqueue_style(
+			'tokolariso-giftcards-my-account',
+			TOKO_LARISO_GIFTCARDS_URL . 'assets/css/my-account.css',
+			array(),
+			TOKO_LARISO_GIFTCARDS_VERSION
+		);
 	}
 
 	/**
@@ -125,9 +140,10 @@ class Toko_Lariso_Giftcards_My_Account {
 	 * @return string
 	 */
 	private function render_balance_checker(): string {
-		$result = null;
-		$error  = '';
-		$code   = '';
+		$result        = null;
+		$error         = '';
+		$result_notice = '';
+		$code          = '';
 
 		if ( isset( $_POST['tokolariso_giftcard_balance_action'] ) ) {
 			$nonce = isset( $_POST['tokolariso_giftcard_balance_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['tokolariso_giftcard_balance_nonce'] ) ) : '';
@@ -141,6 +157,10 @@ class Toko_Lariso_Giftcards_My_Account {
 				$result = $this->lookup_card( $code );
 				if ( ! $result ) {
 					$error = __( 'Giftcard code was not found or cannot be checked.', 'toko-lariso-giftcards' );
+				} elseif ( 'expired' === (string) $result['status'] ) {
+					$result_notice = __( 'This giftcard has been expired and can no longer be used.', 'toko-lariso-giftcards' );
+				} elseif ( (float) $result['current_balance'] <= 0 ) {
+					$result_notice = __( 'The full balance of this giftcard has already been used.', 'toko-lariso-giftcards' );
 				}
 			}
 		}
@@ -169,6 +189,10 @@ class Toko_Lariso_Giftcards_My_Account {
 
 			<?php if ( $error ) : ?>
 				<div class="woocommerce-error" role="alert"><?php echo esc_html( $error ); ?></div>
+			<?php endif; ?>
+
+			<?php if ( $result_notice ) : ?>
+				<div class="woocommerce-info" role="status"><?php echo esc_html( $result_notice ); ?></div>
 			<?php endif; ?>
 
 			<?php if ( is_array( $result ) ) : ?>
@@ -238,24 +262,24 @@ class Toko_Lariso_Giftcards_My_Account {
 		endif;
 		?>
 
-		<table class="shop_table shop_table_responsive tokolariso-giftcard-activity">
+		<table class="woocommerce-table woocommerce-table--giftcard-activity shop_table shop_table_responsive my_account_orders account-orders-table tokolariso-giftcard-activity">
 			<thead>
 				<tr>
-					<th><?php esc_html_e( 'Date', 'toko-lariso-giftcards' ); ?></th>
-					<th><?php esc_html_e( 'Type', 'toko-lariso-giftcards' ); ?></th>
-					<th><?php esc_html_e( 'Reference', 'toko-lariso-giftcards' ); ?></th>
-					<th><?php esc_html_e( 'Amount', 'toko-lariso-giftcards' ); ?></th>
-					<th><?php esc_html_e( 'Balance after', 'toko-lariso-giftcards' ); ?></th>
+					<th scope="col" class="woocommerce-table__header woocommerce-table__header--date"><?php esc_html_e( 'Date', 'toko-lariso-giftcards' ); ?></th>
+					<th scope="col" class="woocommerce-table__header woocommerce-table__header--type"><?php esc_html_e( 'Type', 'toko-lariso-giftcards' ); ?></th>
+					<th scope="col" class="woocommerce-table__header woocommerce-table__header--reference"><?php esc_html_e( 'Reference', 'toko-lariso-giftcards' ); ?></th>
+					<th scope="col" class="woocommerce-table__header woocommerce-table__header--amount tokolariso-giftcard-amount-column"><?php esc_html_e( 'Amount', 'toko-lariso-giftcards' ); ?></th>
+					<th scope="col" class="woocommerce-table__header woocommerce-table__header--balance tokolariso-giftcard-amount-column"><?php esc_html_e( 'Balance after', 'toko-lariso-giftcards' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $activity as $entry ) : ?>
 					<tr>
-						<td><?php echo esc_html( $this->format_activity_date( $entry['created_at'] ?? '' ) ); ?></td>
-						<td><?php echo esc_html( $this->activity_label( (string) ( $entry['mutation_type'] ?? '' ) ) ); ?></td>
-						<td><?php echo esc_html( $this->activity_reference( $entry ) ); ?></td>
-						<td><?php echo wp_kses_post( wc_price( (float) ( $entry['amount'] ?? 0 ), array( 'currency' => (string) $card['currency'] ) ) ); ?></td>
-						<td><?php echo wp_kses_post( wc_price( (float) ( $entry['balance_after'] ?? 0 ), array( 'currency' => (string) $card['currency'] ) ) ); ?></td>
+						<td class="woocommerce-table__cell woocommerce-table__cell--date" data-title="<?php esc_attr_e( 'Date', 'toko-lariso-giftcards' ); ?>"><?php echo wp_kses_post( $this->format_activity_datetime( $entry['created_at'] ?? '' ) ); ?></td>
+						<td class="woocommerce-table__cell woocommerce-table__cell--type" data-title="<?php esc_attr_e( 'Type', 'toko-lariso-giftcards' ); ?>"><?php echo esc_html( $this->activity_label( (string) ( $entry['mutation_type'] ?? '' ) ) ); ?></td>
+						<td class="woocommerce-table__cell woocommerce-table__cell--reference" data-title="<?php esc_attr_e( 'Reference', 'toko-lariso-giftcards' ); ?>"><?php echo esc_html( $this->activity_reference( $entry ) ); ?></td>
+						<td class="woocommerce-table__cell woocommerce-table__cell--amount tokolariso-giftcard-money-cell" data-title="<?php esc_attr_e( 'Amount', 'toko-lariso-giftcards' ); ?>"><?php echo wp_kses_post( $this->format_activity_amount( (float) ( $entry['amount'] ?? 0 ), (string) $card['currency'] ) ); ?></td>
+						<td class="woocommerce-table__cell woocommerce-table__cell--balance tokolariso-giftcard-money-cell" data-title="<?php esc_attr_e( 'Balance after', 'toko-lariso-giftcards' ); ?>"><?php echo wp_kses_post( $this->format_activity_amount( (float) ( $entry['balance_after'] ?? 0 ), (string) $card['currency'] ) ); ?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -318,18 +342,41 @@ class Toko_Lariso_Giftcards_My_Account {
 	}
 
 	/**
-	 * Formats activity date.
+	 * Formats activity money as a non-wrapping amount.
+	 *
+	 * @param float  $amount Amount.
+	 * @param string $currency Currency code.
+	 * @return string
+	 */
+	private function format_activity_amount( float $amount, string $currency ): string {
+		$formatted = wc_price( abs( $amount ), array( 'currency' => $currency ) );
+		if ( $amount < 0 ) {
+			$formatted = '- ' . $formatted;
+		}
+
+		return '<span class="tokolariso-giftcard-money">' . $formatted . '</span>';
+	}
+
+	/**
+	 * Formats activity date and time using WooCommerce display settings.
 	 *
 	 * @param mixed $created_at Created date.
 	 * @return string
 	 */
-	private function format_activity_date( mixed $created_at ): string {
+	private function format_activity_datetime( mixed $created_at ): string {
 		$timestamp = strtotime( (string) $created_at );
 		if ( ! $timestamp ) {
 			return '-';
 		}
 
-		return wp_date( get_option( 'date_format' ), $timestamp );
+		$date_format = function_exists( 'wc_date_format' ) ? wc_date_format() : get_option( 'date_format' );
+		$time_format = function_exists( 'wc_time_format' ) ? wc_time_format() : get_option( 'time_format' );
+
+		return sprintf(
+			'<span class="tokolariso-giftcard-activity-date">%s</span><br><span class="tokolariso-giftcard-activity-time">%s</span>',
+			esc_html( wp_date( $date_format, $timestamp ) ),
+			esc_html( wp_date( $time_format, $timestamp ) )
+		);
 	}
 
 	/**

@@ -18,7 +18,7 @@ Text domain: `toko-lariso-giftcards`.
 
 ## Installation
 
-1. Upload `toko-lariso-giftcards-0.2.00.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
+1. Upload `toko-lariso-giftcards-0.2.05.zip` in WordPress admin under Plugins > Add New > Upload Plugin.
 2. Activate `Toko Lariso Giftcards`.
 3. Go to WooCommerce > Toko Lariso Giftcards > Settings.
 4. Configure fixed amounts, custom amount support, default validity, multiple giftcards, email text, PDF settings, refund behavior, and uninstall behavior.
@@ -104,7 +104,7 @@ Giftcard redemption is treated as a partial payment, not as a cart discount. The
 
 For example, goods of `EUR 4.00` plus shipping of `EUR 6.95` with `EUR 10.00` paid by giftcard produce a remaining payable amount of `EUR 0.95`. The checkout giftcard section still shows the giftcard payment details, while the standard WooCommerce place-order button and payment method receive the remaining WooCommerce total.
 
-The Checkout Block place-order button is visually overlaid with the remaining payment-method amount from Store API extension data. The overlay keeps the existing/template button text and appends the remaining amount. If the base text is not yet available, it falls back to `Bestellen en betalen`. The overlay does not edit React-managed button text nodes, which avoids the earlier checkout block `insertBefore` error.
+The Checkout Block place-order button is visually overlaid with the remaining payment-method amount from Store API extension data. The overlay keeps the existing/template button text and appends the remaining amount. If the base text is not yet available, it falls back to `Bestel en betaal`. The overlay does not edit React-managed button text nodes, which avoids the earlier checkout block `insertBefore` error.
 
 ## Debug Logging
 
